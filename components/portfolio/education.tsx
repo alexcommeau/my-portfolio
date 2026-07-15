@@ -18,11 +18,11 @@ export function Education() {
             Parcours académique et apprentissage continu
           </p>
         </div>
-        <div className="flex flex-wrap justify-center gap-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {education.map((edu) => (
             <div
               key={edu.school}
-              className="flex h-[480px] w-[347px] flex-none flex-col overflow-hidden rounded-[10px] border border-zinc-800 bg-zinc-900 transition-colors hover:border-zinc-700"
+              className="flex w-full min-h-[480px] flex-col overflow-hidden rounded-[10px] border border-zinc-800 bg-zinc-900 transition-colors hover:border-zinc-700"
             >
               <div className="flex flex-1 flex-col justify-center overflow-hidden p-6">
                 <div className="mb-5 flex items-start gap-3.5">

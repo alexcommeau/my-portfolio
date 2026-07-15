@@ -51,13 +51,13 @@ export function Projects() {
             ))}
           </div>
         </div>
-        <div className="grid h-[460px] grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filteredProjects.map((proj) => {
             const isFirst = proj.id === "proj-1";
             return (
               <div
                 key={proj.id}
-                className="flex h-[460px] flex-col overflow-hidden rounded-[10px] border border-zinc-800 bg-zinc-900 transition-colors hover:border-zinc-700"
+                className="flex min-h-[460px] flex-col overflow-hidden rounded-[10px] border border-zinc-800 bg-zinc-900 transition-colors hover:border-zinc-700"
               >
                 <div className="h-[150px] shrink-0">
                   <ImagePlaceholder label="Capture du projet" />
