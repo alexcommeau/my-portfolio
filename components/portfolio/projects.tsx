@@ -40,7 +40,7 @@ export function Projects() {
                 key={pill.key}
                 onClick={() => setFilter(pill.key)}
                 className={cn(
-                  "rounded-md border px-4 py-1.75 text-[13px] font-medium transition-colors",
+                  "cursor-pointer rounded-md border px-4 py-1.75 text-[13px] font-medium transition-colors",
                   filter === pill.key
                     ? "border-cyan-400 bg-cyan-400 font-semibold text-[#052027]"
                     : "border-zinc-800 bg-transparent text-zinc-400 hover:text-zinc-200"

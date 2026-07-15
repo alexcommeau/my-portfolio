@@ -105,7 +105,7 @@ export function Contact() {
               </div>
               <button
                 type="submit"
-                className="mt-1 justify-self-start rounded-md bg-cyan-400 px-6.5 py-2.75 text-[14.5px] font-bold text-[#052027] shadow-sm transition-colors hover:bg-cyan-300"
+                className="mt-1 justify-self-start cursor-pointer rounded-md bg-cyan-400 px-6.5 py-2.75 text-[14.5px] font-bold text-[#052027] shadow-sm transition-colors hover:bg-cyan-300"
               >
                 Envoyer le message
               </button>

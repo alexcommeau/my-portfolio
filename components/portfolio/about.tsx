@@ -104,7 +104,7 @@ export function About() {
             <button
               onClick={() => setAboutTab("chat")}
               className={cn(
-                "rounded-md px-4.5 py-2 font-sans text-[13px] font-semibold transition-colors",
+                "cursor-pointer rounded-md px-4.5 py-2 font-sans text-[13px] font-semibold transition-colors",
                 aboutTab === "chat"
                   ? "bg-cyan-400 text-[#052027]"
                   : "bg-transparent text-zinc-400"
@@ -115,7 +115,7 @@ export function About() {
             <button
               onClick={() => setAboutTab("profile")}
               className={cn(
-                "rounded-md px-4.5 py-2 font-sans text-[13px] font-semibold transition-colors",
+                "cursor-pointer rounded-md px-4.5 py-2 font-sans text-[13px] font-semibold transition-colors",
                 aboutTab === "profile"
                   ? "bg-zinc-800 text-zinc-100"
                   : "bg-transparent text-zinc-400"
@@ -226,7 +226,7 @@ export function About() {
                     <button
                       key={item.q}
                       onClick={() => askQuestion(item.q, item.a)}
-                      className="rounded-lg border border-zinc-800 px-3 py-2.5 text-left text-[13px] leading-tight text-zinc-300 transition-colors hover:border-cyan-400 hover:text-cyan-400"
+                      className="cursor-pointer rounded-lg border border-zinc-800 px-3 py-2.5 text-left text-[13px] leading-tight text-zinc-300 transition-colors hover:border-cyan-400 hover:text-cyan-400"
                     >
                       {item.q}
                     </button>
@@ -289,7 +289,7 @@ export function About() {
                   <button
                     type="submit"
                     aria-label="Envoyer"
-                    className="flex size-9.5 shrink-0 items-center justify-center rounded-md bg-cyan-400 text-[#052027] transition-colors hover:bg-cyan-300"
+                    className="cursor-pointer flex size-9.5 shrink-0 items-center justify-center rounded-md bg-cyan-400 text-[#052027] transition-colors hover:bg-cyan-300"
                   >
                     <SendIcon className="size-4" />
                   </button>
