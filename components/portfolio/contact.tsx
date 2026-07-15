@@ -29,19 +29,18 @@ export function Contact() {
       className="relative border-t border-zinc-900 bg-white/[1.5%]"
     >
       <Reveal className="mx-auto max-w-6xl px-8 py-24">
+        <div className="mb-10 text-center">
+          <h2 className="mb-3 text-4xl font-extrabold tracking-tight">
+            Contactez-
+            <span className="bg-gradient-to-r from-cyan-400 via-teal-400 to-amber-400 bg-clip-text text-transparent">
+              moi
+            </span>
+          </h2>
+          <p className="text-[15.5px] text-zinc-400">
+            Une question, un projet, ou simplement envie de discuter ? N&apos;hésitez pas à me laisser un message.
+          </p>
+        </div>
         <div className="mx-auto max-w-[620px] rounded-xl border border-zinc-800 bg-zinc-900 p-9 shadow-sm sm:p-10">
-          <div className="mb-6 text-center">
-            <h2 className="mb-3.5 text-3xl font-extrabold tracking-tight">
-              Discutons de votre{" "}
-              <span className="bg-gradient-to-r from-cyan-400 via-teal-400 to-amber-400 bg-clip-text text-transparent">
-                projet
-              </span>
-            </h2>
-            <p className="mx-auto max-w-[460px] text-[15px] leading-relaxed text-zinc-400">
-              Toujours partant pour discuter d&apos;une opportunité, d&apos;une
-              idée de produit ou d&apos;un système IA à construire.
-            </p>
-          </div>
 
           {sent ? (
             <div className="py-7 text-center text-[15px] font-semibold text-teal-400">
