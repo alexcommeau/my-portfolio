@@ -20,6 +20,11 @@ export const roles = [
   "ML Explorer",
 ];
 
+export const bio: string[] = [
+  "Avec plusieurs années d'expérience en développement fullstack, j'ai travaillé sur l'ensemble du cycle produit : architecture d'API, interfaces React, bases de données, déploiement cloud. Cette pratique m'a naturellement mené vers l'ingénierie IA, où je conçois aujourd'hui des agents et des pipelines RAG qui combinent connaissance métier et modèles de langage.",
+  "Ce qui me motive : transformer des besoins ambigus en systèmes simples, robustes et agréables à utiliser — que ce soit pour un utilisateur final ou pour l'équipe qui maintient le code.",
+];
+
 export type AboutCard = {
   glyph: string;
   title: string;
@@ -232,27 +237,11 @@ export const blogPosts: BlogPost[] = [
 
 export type ChatQA = {
   q: string;
-  a: string;
 };
 
 export const chatQA: ChatQA[] = [
-  {
-    q: "Quelles technologies maîtrises-tu ?",
-    a: "Je travaille surtout avec React, Node.js et Python, et je conçois des agents IA avec LangChain, des pipelines RAG et n8n.",
-  },
-  {
-    q: "Sur quoi travailles-tu en ce moment ?",
-    a: "En ce moment je construis des assistants documentaires RAG et des automatisations n8n pour des équipes produit.",
-  },
-  {
-    q: "Es-tu disponible pour une mission ?",
-    a: "Oui, je suis actuellement disponible pour des missions freelance ou un poste fullstack / IA.",
-  },
-  {
-    q: "Comment te contacter ?",
-    a: "Le plus simple est par email à alex.commeau@example.com, ou via la section Contact plus bas sur cette page.",
-  },
+  { q: "Quelles technologies maîtrises-tu ?" },
+  { q: "Sur quoi travailles-tu en ce moment ?" },
+  { q: "Es-tu disponible pour une mission ?" },
+  { q: "Comment te contacter ?" },
 ];
-
-export const chatFallbackAnswer =
-  "Bonne question ! Je n'ai pas de réponse toute prête pour celle-ci — le plus simple est de me la poser directement par email ou via le formulaire de contact plus bas.";

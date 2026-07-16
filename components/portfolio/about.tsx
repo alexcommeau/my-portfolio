@@ -1,16 +1,20 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { Reveal } from "@/components/portfolio/reveal";
 import { useAboutTabContext } from "@/components/portfolio/ui-context";
 import { Input } from "@/components/ui/input";
-import { aboutCards, chatFallbackAnswer, chatQA } from "@/lib/data";
+import { aboutCards, bio, chatQA } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
-type ChatMessage = {
-  role: "user" | "ai";
-  text: string;
-};
+function messageText(parts: { type: string; text?: string }[]) {
+  return parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("");
+}
 
 function GpuIcon({ className }: { className?: string }) {
   return (
@@ -56,31 +60,21 @@ function SendIcon({ className }: { className?: string }) {
 
 export function About() {
   const { aboutTab, setAboutTab } = useAboutTabContext();
-  const [chatLog, setChatLog] = useState<ChatMessage[]>([]);
-  const [chatTyping, setChatTyping] = useState(false);
   const [chatInput, setChatInput] = useState("");
-  const chatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { messages, sendMessage, status, error } = useChat({
+    transport: new DefaultChatTransport({ api: "/api/chat" }),
+  });
+  const chatTyping = status === "submitted";
 
-  const respond = (userText: string, answer: string) => {
-    if (chatTimer.current) clearTimeout(chatTimer.current);
-    setChatLog((log) => [...log, { role: "user", text: userText }]);
-    setChatTyping(true);
-    chatTimer.current = setTimeout(() => {
-      setChatLog((log) => [...log, { role: "ai", text: answer }]);
-      setChatTyping(false);
-    }, 800);
-  };
-
-  const askQuestion = (question: string, answer: string) => {
-    respond(question, answer);
+  const askQuestion = (question: string) => {
+    sendMessage({ text: question });
   };
 
   const sendChatMessage = (e: React.FormEvent) => {
     e.preventDefault();
     const text = chatInput.trim();
     if (!text) return;
-    const match = chatQA.find((item) => item.q.toLowerCase() === text.toLowerCase());
-    respond(text, match ? match.a : chatFallbackAnswer);
+    sendMessage({ text });
     setChatInput("");
   };
 
@@ -130,20 +124,14 @@ export function About() {
           <div className="grid min-h-[460px] grid-cols-1 gap-5 md:grid-cols-[1.1fr_1fr]">
             <div className="rounded-[10px] border border-zinc-800 bg-zinc-900 p-8">
               <h3 className="mb-4 text-xl font-bold text-cyan-400">Parcours</h3>
-              <p className="text-[15px] leading-loose text-zinc-400">
-                Avec plusieurs années d&apos;expérience en développement fullstack,
-                j&apos;ai travaillé sur l&apos;ensemble du cycle produit&nbsp;:
-                architecture d&apos;API, interfaces React, bases de données,
-                déploiement cloud. Cette pratique m&apos;a naturellement mené vers
-                l&apos;ingénierie IA, où je conçois aujourd&apos;hui des agents et
-                des pipelines RAG qui combinent connaissance métier et modèles de
-                langage.
-              </p>
-              <p className="mt-4 text-[15px] leading-loose text-zinc-400">
-                Ce qui me motive&nbsp;: transformer des besoins ambigus en systèmes
-                simples, robustes et agréables à utiliser — que ce soit pour un
-                utilisateur final ou pour l&apos;équipe qui maintient le code.
-              </p>
+              {bio.map((paragraph, i) => (
+                <p
+                  key={paragraph}
+                  className={cn("text-[15px] leading-loose text-zinc-400", i > 0 && "mt-4")}
+                >
+                  {paragraph}
+                </p>
+              ))}
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {aboutCards.map((card) => (
@@ -225,7 +213,7 @@ export function About() {
                   {chatQA.map((item) => (
                     <button
                       key={item.q}
-                      onClick={() => askQuestion(item.q, item.a)}
+                      onClick={() => askQuestion(item.q)}
                       className="cursor-pointer rounded-lg border border-zinc-800 px-3 py-2.5 text-left text-[13px] leading-tight text-zinc-300 transition-colors hover:border-cyan-400 hover:text-cyan-400"
                     >
                       {item.q}
@@ -235,7 +223,7 @@ export function About() {
               </div>
               <div className="flex flex-col px-6.5 py-6">
                 <div className="flex max-h-[600px] min-h-[400px] flex-col gap-3.5 overflow-y-auto pr-1">
-                  {chatLog.length === 0 && (
+                  {messages.length === 0 && (
                     <div className="m-auto max-w-[420px] text-center">
                       <div className="mb-3.5 text-[19px] font-bold text-zinc-100">
                         Bonjour 👋 Je suis l&apos;assistant IA d&apos;Alex.
@@ -247,9 +235,9 @@ export function About() {
                       </div>
                     </div>
                   )}
-                  {chatLog.map((msg, i) => (
+                  {messages.map((msg) => (
                     <div
-                      key={i}
+                      key={msg.id}
                       className={cn(
                         "max-w-[80%]",
                         msg.role === "user" ? "self-end" : "self-start"
@@ -263,7 +251,7 @@ export function About() {
                             : "rounded-bl-sm border border-zinc-700 bg-zinc-800 text-zinc-300"
                         )}
                       >
-                        {msg.text}
+                        {messageText(msg.parts)}
                       </div>
                     </div>
                   ))}
@@ -271,6 +259,14 @@ export function About() {
                     <div className="max-w-[80%] self-start">
                       <div className="rounded-lg border border-zinc-700 bg-zinc-800 px-3.5 py-2.5 font-mono text-[12.5px] text-zinc-400">
                         l&apos;assistant écrit…
+                      </div>
+                    </div>
+                  )}
+                  {error && (
+                    <div className="max-w-[80%] self-start">
+                      <div className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-2.5 text-[13px] text-red-300">
+                        Impossible de joindre le modèle — vérifiez que le
+                        serveur est bien démarré et réessayez.
                       </div>
                     </div>
                   )}
