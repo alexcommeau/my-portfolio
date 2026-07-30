@@ -29,7 +29,7 @@ export function Skills() {
                 {group.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-md border border-zinc-700 bg-zinc-800 px-3.25 py-1.75 text-[13.5px] text-zinc-300"
+                    className="rounded-md border border-zinc-700 bg-zinc-800 px-3.25 py-1.75 text-[13.5px] text-zinc-300 transition-colors hover:border-zinc-600"
                   >
                     {tag}
                   </span>

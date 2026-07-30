@@ -93,9 +93,15 @@ export function Hero() {
           </a>
         </div>
         <div className="flex gap-3">
-          <Link
-            href="#projects"
-            className="inline-flex items-center gap-2 rounded-md bg-cyan-400 px-5.5 py-2.75 text-[14.5px] font-semibold text-[#052027] shadow-sm transition-colors hover:bg-cyan-300"
+          <button
+            onClick={() => {
+              const el = document.getElementById("projects");
+              if (el) {
+                const top = el.getBoundingClientRect().top + window.scrollY - 10;
+                window.scrollTo({ top, behavior: "smooth" });
+              }
+            }}
+            className="inline-flex items-center gap-2 rounded-md bg-cyan-400 px-5.5 py-2.75 text-[14.5px] font-semibold text-[#052027] shadow-sm transition-colors hover:bg-cyan-300 cursor-pointer"
           >
             Voir mes projets
             <svg
@@ -108,7 +114,7 @@ export function Hero() {
             >
               <path d="M5 12h14M13 6l6 6-6 6" />
             </svg>
-          </Link>
+          </button>
           <a
             href="#"
             className="inline-flex items-center gap-2 rounded-md border border-zinc-800 px-5.5 py-2.75 text-[14.5px] font-semibold text-zinc-200 transition-colors hover:border-zinc-600 hover:bg-zinc-900"

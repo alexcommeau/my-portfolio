@@ -9,7 +9,6 @@ export const navItems: NavItem[] = [
   { label: "Expérience", href: "#experience" },
   { label: "Projets", href: "#projects" },
   { label: "Formation", href: "#education" },
-  { label: "Blog", href: "#blog" },
   { label: "Contact", href: "#contact" },
 ];
 
@@ -89,11 +88,24 @@ export const skillGroups: SkillGroup[] = [
   },
   {
     title: "IA & Agents",
-    tags: ["LLM API", "RAG", "Prompt Engineering", "Embeddings", "Vector Search"],
+    tags: [
+      "LLM API",
+      "RAG",
+      "Prompt Engineering",
+      "Embeddings",
+      "Vector Search",
+    ],
   },
   {
     title: "Data & Cloud",
-    tags: ["Docker", "Linux", "Cloudflare Tunnel", "SSH", "GitHub Actions", "AWS"],
+    tags: [
+      "Docker",
+      "Linux",
+      "Cloudflare Tunnel",
+      "SSH",
+      "GitHub Actions",
+      "AWS",
+    ],
   },
   {
     title: "Outils",
