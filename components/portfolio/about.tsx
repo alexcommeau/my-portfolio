@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { Reveal } from "@/components/portfolio/reveal";
@@ -65,6 +65,12 @@ export function About() {
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
   const chatTyping = status === "submitted";
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = chatScrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, chatTyping, error]);
 
   const askQuestion = (question: string) => {
     sendMessage({ text: question });
@@ -222,7 +228,10 @@ export function About() {
                 </div>
               </div>
               <div className="flex flex-col px-6.5 py-6">
-                <div className="flex max-h-[600px] min-h-[400px] flex-col gap-3.5 overflow-y-auto pr-1">
+                <div
+                  ref={chatScrollRef}
+                  className="flex h-[350px] flex-col gap-3.5 overflow-y-auto pr-1"
+                >
                   {messages.length === 0 && (
                     <div className="m-auto max-w-[420px] text-center">
                       <div className="mb-3.5 text-[19px] font-bold text-zinc-100">

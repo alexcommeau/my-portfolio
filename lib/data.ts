@@ -21,8 +21,8 @@ export const roles = [
 ];
 
 export const bio: string[] = [
-  "Avec plusieurs années d'expérience en développement fullstack, j'ai travaillé sur l'ensemble du cycle produit : architecture d'API, interfaces React, bases de données, déploiement cloud. Cette pratique m'a naturellement mené vers l'ingénierie IA, où je conçois aujourd'hui des agents et des pipelines RAG qui combinent connaissance métier et modèles de langage.",
-  "Ce qui me motive : transformer des besoins ambigus en systèmes simples, robustes et agréables à utiliser — que ce soit pour un utilisateur final ou pour l'équipe qui maintient le code.",
+  "Avec plusieurs années d'expérience en développement fullstack, Alex a travaillé sur l'ensemble du cycle produit : architecture d'API, interfaces React, bases de données, déploiement cloud. Cette pratique l'a naturellement mené vers l'ingénierie IA, où Alex conçoit aujourd'hui des agents et des pipelines RAG qui combinent connaissance métier et modèles de langage.",
+  "Ce qui motive Alex : transformer des besoins ambigus en systèmes simples, robustes et agréables à utiliser — que ce soit pour un utilisateur final ou pour l'équipe qui maintient le code.",
 ];
 
 export type AboutCard = {

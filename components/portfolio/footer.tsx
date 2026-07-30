@@ -5,14 +5,14 @@ import { GithubIcon, LinkedinIcon, MailIcon } from "@/components/portfolio/socia
 export function Footer() {
   return (
     <footer className="border-t border-zinc-900 px-8 py-10">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
+      <div className="mx-auto flex max-w-6xl flex-col flex-wrap items-center justify-center gap-6 text-center sm:flex-row sm:gap-4">
         <Link
           href="#hero"
           className="bg-gradient-to-r from-cyan-400 via-teal-400 to-amber-400 bg-clip-text font-mono text-base font-bold text-transparent"
         >
           [ AC ]
         </Link>
-        <div className="flex gap-6">
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
           {navItems.map((item) => (
             <Link
               key={item.href}
