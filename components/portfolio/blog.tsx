@@ -5,7 +5,8 @@ import { blogPosts } from "@/lib/data";
 
 export function Blog() {
   return (
-    <section id="blog" className="relative border-t border-zinc-900">
+    <section className="relative border-t border-zinc-900">
+      <span id="blog" aria-hidden="true" className="pointer-events-none absolute top-24" />
       <Reveal className="mx-auto max-w-6xl px-8 py-24">
         <div className="mb-9 text-center">
           <h2 className="mb-3 text-4xl font-extrabold tracking-tight">

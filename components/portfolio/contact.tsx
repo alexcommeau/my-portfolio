@@ -25,9 +25,9 @@ export function Contact() {
 
   return (
     <section
-      id="contact"
       className="relative border-t border-zinc-900 bg-white/[1.5%]"
     >
+      <span id="contact" aria-hidden="true" className="pointer-events-none absolute top-24" />
       <Reveal className="mx-auto max-w-6xl px-8 py-24">
         <div className="mb-10 text-center">
           <h2 className="mb-3 text-4xl font-extrabold tracking-tight">

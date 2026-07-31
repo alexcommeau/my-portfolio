@@ -24,20 +24,20 @@ export function Footer() {
           ))}
         </div>
         <div className="flex gap-3">
-          <a
-            href="#"
+          <span
             aria-label="GitHub"
+            aria-disabled="true"
             className="flex size-8.5 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-500 transition-colors hover:border-cyan-400 hover:text-cyan-400"
           >
             <GithubIcon className="size-3.75" />
-          </a>
-          <a
-            href="#"
+          </span>
+          <span
             aria-label="LinkedIn"
+            aria-disabled="true"
             className="flex size-8.5 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-500 transition-colors hover:border-cyan-400 hover:text-cyan-400"
           >
             <LinkedinIcon className="size-3.75" />
-          </a>
+          </span>
           <a
             href="mailto:alex.commeau@example.com"
             aria-label="Email"

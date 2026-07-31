@@ -10,7 +10,7 @@ export function ArticleNav() {
         [ AC ]
       </Link>
       <Link
-        href="/#blog"
+        href="/"
         className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-zinc-400 transition-colors hover:text-zinc-100"
       >
         <svg
@@ -23,7 +23,7 @@ export function ArticleNav() {
         >
           <path d="M19 12H5M11 18l-6-6 6-6" />
         </svg>
-        Retour au blog
+        Retour à l&apos;accueil
       </Link>
     </nav>
   );

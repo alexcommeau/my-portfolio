@@ -86,9 +86,9 @@ export function About() {
 
   return (
     <section
-      id="about"
       className="relative border-t border-zinc-900 bg-white/[1.5%]"
     >
+      <span id="about" aria-hidden="true" className="pointer-events-none absolute top-24" />
       <Reveal className="mx-auto max-w-6xl px-8 py-24">
         <div className="mb-8 text-center">
           <h2 className="mb-3 text-4xl font-extrabold tracking-tight">
@@ -204,6 +204,7 @@ export function About() {
                 <span className="text-zinc-800">|</span>
                 <a
                   href="#"
+                  onClick={(event) => event.preventDefault()}
                   className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-cyan-400 hover:text-cyan-300"
                 >
                   Voir l&apos;architecture →

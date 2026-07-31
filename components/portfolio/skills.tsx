@@ -3,7 +3,8 @@ import { skillGroups } from "@/lib/data";
 
 export function Skills() {
   return (
-    <section id="skills" className="relative border-t border-zinc-900">
+    <section className="relative border-t border-zinc-900">
+      <span id="skills" aria-hidden="true" className="pointer-events-none absolute top-24" />
       <Reveal className="mx-auto max-w-6xl px-8 py-24">
         <div className="mb-10 text-center">
           <h2 className="mb-3 text-4xl font-extrabold tracking-tight">

@@ -7,10 +7,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 function scrollToSection(id: string) {
   const el = document.getElementById(id);
-  if (el) {
-    const top = el.getBoundingClientRect().top + window.scrollY - 10;
-    window.scrollTo({ top, behavior: "smooth" });
-  }
+  el?.scrollIntoView({ block: "start" });
 }
 
 export function Navbar() {
@@ -25,7 +22,7 @@ export function Navbar() {
     <nav className="sticky top-0 z-[60] flex h-[86px] items-center justify-between gap-4 border-b border-zinc-800 bg-zinc-950/85 px-5 backdrop-blur-md sm:px-8">
       <button
         onClick={() => handleNavigate("hero")}
-        className="shrink-0 cursor-pointer bg-gradient-to-r from-cyan-400 via-teal-400 to-amber-400 bg-clip-text font-mono text-lg font-bold text-transparent"
+        className="shrink-0 cursor-pointer bg-gradient-to-r from-cyan-400 via-teal-400 to-amber-400 bg-clip-text font-mono text-xl font-bold text-transparent"
       >
         [ AC ]
       </button>

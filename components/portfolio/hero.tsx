@@ -3,9 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { motion, useReducedMotion, useSpring } from "motion/react";
 import { roles } from "@/lib/data";
 import { Reveal } from "@/components/portfolio/reveal";
 import { GithubIcon, LinkedinIcon, MailIcon } from "@/components/portfolio/social-icons";
+import styles from "./hero.module.css";
+
+const MAX_TILT = 5;
+const tiltSpring = { stiffness: 180, damping: 22, mass: 0.6 };
 
 function useTypedRole() {
   const [text, setText] = useState("");
@@ -41,6 +46,132 @@ function useTypedRole() {
   return text;
 }
 
+function HeroPortrait() {
+  const borderRef = useRef<HTMLDivElement>(null);
+  const borderAnimationFrame = useRef<number | null>(null);
+  const rotateX = useSpring(0, tiltSpring);
+  const rotateY = useSpring(0, tiltSpring);
+  const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (shouldReduceMotion) {
+      rotateX.jump(0);
+      rotateY.jump(0);
+    }
+  }, [rotateX, rotateY, shouldReduceMotion]);
+
+  useEffect(
+    () => () => {
+      if (borderAnimationFrame.current !== null) {
+        cancelAnimationFrame(borderAnimationFrame.current);
+      }
+    },
+    []
+  );
+
+  const resetTilt = () => {
+    rotateX.set(0);
+    rotateY.set(0);
+  };
+
+  const startBorderFromPointer = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "touch") return;
+
+    const border = borderRef.current;
+    if (!border) return;
+
+    const bounds = border.getBoundingClientRect();
+    const offsetX = event.clientX - (bounds.left + bounds.width / 2);
+    const offsetY = event.clientY - (bounds.top + bounds.height / 2);
+    const angle = (Math.atan2(offsetX, -offsetY) * 180) / Math.PI;
+    const normalizedAngle = (angle + 360) % 360;
+
+    if (borderAnimationFrame.current !== null) {
+      cancelAnimationFrame(borderAnimationFrame.current);
+    }
+
+    border.removeAttribute("data-border-active");
+    border.style.setProperty("transition", "none");
+    border.style.setProperty("--electric-spread", "0.35deg");
+    border.style.setProperty("--electric-uniformity", "0%");
+    border.style.setProperty("--electric-origin", `${normalizedAngle}deg`);
+    border.getBoundingClientRect();
+    borderAnimationFrame.current = requestAnimationFrame(() => {
+      border.style.removeProperty("transition");
+      border.setAttribute("data-border-active", "true");
+      border.style.removeProperty("--electric-spread");
+      border.style.removeProperty("--electric-uniformity");
+      borderAnimationFrame.current = null;
+    });
+  };
+
+  const resetPortrait = () => {
+    resetTilt();
+
+    if (borderAnimationFrame.current !== null) {
+      cancelAnimationFrame(borderAnimationFrame.current);
+      borderAnimationFrame.current = null;
+    }
+
+    const border = borderRef.current;
+    border?.removeAttribute("data-border-active");
+    border?.style.removeProperty("transition");
+    border?.style.removeProperty("--electric-spread");
+    border?.style.removeProperty("--electric-uniformity");
+  };
+
+  const updateTilt = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (shouldReduceMotion || event.pointerType === "touch") return;
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = Math.max(
+      -0.5,
+      Math.min(0.5, (event.clientX - bounds.left) / bounds.width - 0.5)
+    );
+    const y = Math.max(
+      -0.5,
+      Math.min(0.5, (event.clientY - bounds.top) / bounds.height - 0.5)
+    );
+
+    rotateX.set(-y * MAX_TILT * 2);
+    rotateY.set(x * MAX_TILT * 2);
+  };
+
+  return (
+    <Reveal className="w-full max-w-[340px] justify-self-center">
+      <motion.div
+        onPointerEnter={startBorderFromPointer}
+        onPointerMove={updateTilt}
+        onPointerLeave={resetPortrait}
+        onPointerCancel={resetPortrait}
+        style={{ rotateX, rotateY, transformPerspective: 1000 }}
+        className="group relative w-full will-change-transform"
+      >
+        <div
+          ref={borderRef}
+          className={`${styles.electricBorder} aspect-[17/20] w-full rounded-[10px] shadow-[0_10px_40px_rgba(0,0,0,0.5)] transition-shadow duration-300 hover:shadow-[0_10px_44px_rgba(34,211,238,0.14)]`}
+        >
+          <div className="h-full w-full overflow-hidden rounded-[10px] border border-zinc-800">
+            <Image
+              src="/images/hero.webp"
+              alt="Photo de profil d'Alex Commeau"
+              width={340}
+              height={400}
+              sizes="(max-width: 403px) calc(100vw - 4rem), 340px"
+              className="h-full w-full object-cover"
+              preload
+            />
+          </div>
+        </div>
+        <div className="absolute right-2 -bottom-4 flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2.25 shadow-[0_4px_16px_rgba(0,0,0,0.4)] sm:-right-5">
+          <span className="size-1.75 rounded-full bg-emerald-400" />
+          <span className="text-[12.5px] font-semibold">Disponible</span>
+        </div>
+      </motion.div>
+    </Reveal>
+  );
+}
+
 export function Hero() {
   const typed = useTypedRole();
 
@@ -72,6 +203,7 @@ export function Hero() {
         <div className="mb-7 flex gap-2.5">
           <a
             href="#"
+            onClick={(event) => event.preventDefault()}
             aria-label="GitHub"
             className="flex size-9.5 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition-colors hover:border-cyan-400 hover:text-cyan-400"
           >
@@ -79,6 +211,7 @@ export function Hero() {
           </a>
           <a
             href="#"
+            onClick={(event) => event.preventDefault()}
             aria-label="LinkedIn"
             className="flex size-9.5 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition-colors hover:border-cyan-400 hover:text-cyan-400"
           >
@@ -94,13 +227,9 @@ export function Hero() {
         </div>
         <div className="flex gap-3">
           <button
-            onClick={() => {
-              const el = document.getElementById("projects");
-              if (el) {
-                const top = el.getBoundingClientRect().top + window.scrollY - 10;
-                window.scrollTo({ top, behavior: "smooth" });
-              }
-            }}
+            onClick={() =>
+              document.getElementById("projects")?.scrollIntoView({ block: "start" })
+            }
             className="inline-flex items-center gap-2 rounded-md bg-cyan-400 px-5.5 py-2.75 text-[14.5px] font-semibold text-[#052027] shadow-sm transition-colors hover:bg-cyan-300 cursor-pointer"
           >
             Voir mes projets
@@ -117,6 +246,7 @@ export function Hero() {
           </button>
           <a
             href="#"
+            onClick={(event) => event.preventDefault()}
             className="inline-flex items-center gap-2 rounded-md border border-zinc-800 px-5.5 py-2.75 text-[14.5px] font-semibold text-zinc-200 transition-colors hover:border-zinc-600 hover:bg-zinc-900"
           >
             CV
@@ -134,23 +264,7 @@ export function Hero() {
         </div>
       </Reveal>
 
-      <Reveal className="relative w-full max-w-[340px] justify-self-center">
-        <div className="aspect-[17/20] w-full overflow-hidden rounded-[10px] border border-zinc-800 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
-          <Image
-            src="/images/hero.webp"
-            alt="Photo de profil d'Alex Commeau"
-            width={340}
-            height={400}
-            sizes="(max-width: 403px) calc(100vw - 4rem), 340px"
-            className="h-full w-full object-cover"
-            preload
-          />
-        </div>
-        <div className="absolute right-2 -bottom-4 flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2.25 shadow-[0_4px_16px_rgba(0,0,0,0.4)] sm:-right-5">
-          <span className="size-1.75 rounded-full bg-emerald-400" />
-          <span className="text-[12.5px] font-semibold">Disponible</span>
-        </div>
-      </Reveal>
+      <HeroPortrait />
 
       <Link
         href="#about"

@@ -1,7 +1,7 @@
 # Cartographie du projet
 
 > Document de reprise destiné aux humains et aux agents IA. Il décrit le dépôt tel
-> qu’il a été vérifié le 30 juillet 2026. Le code reste la source de vérité : avant
+> qu’il a été vérifié le 31 juillet 2026. Le code reste la source de vérité : avant
 > toute intervention, relire `AGENTS.md`, exécuter `git status --short` et vérifier
 > les fichiers concernés.
 
@@ -60,6 +60,7 @@ Toujours préserver les modifications déjà présentes dans le worktree.
 | Tailwind CSS | `^4`, via PostCSS |
 | AI SDK | `ai ^7.0.29`, `@ai-sdk/react ^4.0.32` |
 | Fournisseur IA | `@ai-sdk/openai-compatible ^3.0.11` |
+| Animations interactives | Motion `^12.43.0` |
 | Primitives UI | Base UI, shadcn, Lucide React |
 | Gestionnaire | npm, verrouillage par `package-lock.json` |
 
@@ -177,15 +178,16 @@ ne sont pas importés.
 5. `Experience`
 6. `Projects`
 7. `Education`
-8. `Blog`
-9. `Contact`
-10. `Footer`
+8. `Contact`
+9. `Footer`
 
 Le tout est enveloppé dans `AboutTabProvider`, qui partage l’onglet actif de la section
 À propos entre `About` et `Projects`.
 
-Ancres : `hero`, `about`, `skills`, `experience`, `projects`, `education`, `blog`,
-`contact`. `navItems` dans `lib/data.ts` doit rester synchronisé avec ces identifiants.
+Ancres actives : `hero`, `about`, `skills`, `experience`, `projects`, `education`,
+`contact`. Le composant `Blog` existe, mais il n’est actuellement pas monté dans
+`app/page.tsx`. `navItems` dans `lib/data.ts` doit rester synchronisé avec les ancres
+actives.
 
 ### `GET /blog/[slug]`
 
@@ -196,7 +198,9 @@ Ancres : `hero`, `about`, `skills`, `experience`, `projects`, `education`, `blog
 - exige que le même slug existe aussi dans `articleRegistry` ;
 - renvoie `notFound()` si les métadonnées ou le composant manquent.
 
-Il n’y a pas de route `/blog` autonome : la liste du blog est une section de `/`.
+Il n’y a pas de route `/blog` autonome. Le composant de liste existe mais est
+actuellement désactivé sur `/` ; les articles restent accessibles directement par
+leur slug.
 
 ### `POST /api/chat`
 
@@ -214,7 +218,7 @@ rate limiting ni traitement d’erreur personnalisé.
 | Fichier | Responsabilité | État / dépendances |
 |---|---|---|
 | `navbar.tsx` | navigation desktop/mobile et scroll fluide | client ; `navItems`, `Sheet` |
-| `hero.tsx` | introduction, rôle animé, portrait et CTA | client ; `roles`, `hero.webp` |
+| `hero.tsx` | introduction, rôle animé, portrait avec tilt et CTA | client ; Motion, `roles`, `hero.webp` |
 | `about.tsx` | onglets Profil/Chat et interface du chat | client ; `useChat`, `/api/chat` |
 | `ui-context.tsx` | état partagé `aboutTab` | client |
 | `skills.tsx` | grilles de compétences | `skillGroups` |
@@ -230,7 +234,7 @@ rate limiting ni traitement d’erreur personnalisé.
 
 ### `components/blog/`
 
-- `article-nav.tsx` : retour à l’accueil et à `/#blog` ;
+- `article-nav.tsx` : retour à l’accueil ;
 - `article-header.tsx` : tag, date, auteur et rôle ;
 - `article-callout.tsx` : encart éditorial ;
 - `article-code-block.tsx` : bloc de code stylisé ;
@@ -278,7 +282,10 @@ message générique. L’historique reste uniquement dans l’état React de la 
 
 ### Navigation et état partagé
 
-- `Navbar` calcule la position des sections et utilise `window.scrollTo`.
+- Chaque ancre de section utilise un marqueur invisible, sans dimension et placé à la
+  position finale du titre, hors du conteneur animé. Les ancres natives et les appels
+  à `scrollIntoView` partagent un offset global de 116 px, afin de placer chaque titre
+  30 px sous la navbar sticky de 86 px.
 - Le menu mobile est un `Sheet` contrôlé par l’état `open`.
 - La Démo du premier projet sélectionne l’onglet Chat via `AboutTabProvider`, puis
   défile vers `#about`.
@@ -395,9 +402,8 @@ les filtres projets, le passage Projet → Chat, les onglets Profil/Chat et
 Pour tester réellement le chat, un serveur compatible OpenAI accessible via
 `LLAMACPP_BASE_URL` est requis.
 
-Dernier contrôle, le 30 juillet 2026 :
+Dernier contrôle, le 31 juillet 2026 avec Node.js `22.18.0` :
 
 - `npm run lint` : réussi ;
-- `npm run build` : non exécuté jusqu’au bout dans l’environnement de contrôle, car
-  celui-ci utilise Node.js `18.13.0` alors que Next.js exige `>=20.9.0`. Aucun échec
-  applicatif n’a été observé avant ce contrôle de version.
+- `npx tsc --noEmit` : réussi ;
+- `npm run build` : réussi.
