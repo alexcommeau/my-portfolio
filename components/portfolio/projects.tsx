@@ -19,11 +19,12 @@ export function Projects() {
   const goToIaChat = (e: React.MouseEvent) => {
     e.preventDefault();
     setAboutTab("chat");
-    document.getElementById("about")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("about")?.scrollIntoView({ block: "start" });
   };
 
   return (
-    <section id="projects" className="relative border-t border-zinc-900">
+    <section className="relative border-t border-zinc-900">
+      <span id="projects" aria-hidden="true" className="pointer-events-none absolute top-24" />
       <Reveal className="mx-auto max-w-6xl px-8 py-24">
         <div className="mb-9 text-center">
           <h2 className="mb-3 text-4xl font-extrabold tracking-tight">
@@ -97,6 +98,7 @@ export function Projects() {
                     ) : (
                       <a
                         href="#"
+                        onClick={(event) => event.preventDefault()}
                         className="inline-flex items-center gap-1.5 rounded-md border border-zinc-800 px-4 py-2.25 text-[13.5px] font-semibold text-zinc-200 transition-colors hover:bg-zinc-800"
                       >
                         Code
@@ -113,8 +115,12 @@ export function Projects() {
                       </a>
                     )}
                     <a
-                      href={isFirst ? "#about" : "#"}
-                      onClick={isFirst ? goToIaChat : undefined}
+                      href={isFirst ? "#chat-demo" : "#"}
+                      onClick={
+                        isFirst
+                          ? goToIaChat
+                          : (event) => event.preventDefault()
+                      }
                       className="inline-flex items-center gap-1.5 rounded-md bg-cyan-400 px-4 py-2.25 text-[13.5px] font-semibold text-[#052027] transition-colors hover:bg-amber-400"
                     >
                       Démo
