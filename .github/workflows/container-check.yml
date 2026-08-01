@@ -1,0 +1,71 @@
+name: Validate container
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: container-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  container:
+    name: Build and smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build image
+        run: |
+          docker build \
+            --build-arg APP_REVISION="${GITHUB_SHA}" \
+            --tag my-portfolio:test \
+            .
+
+      - name: Verify image metadata and user
+        run: |
+          test "$(docker image inspect --format '{{.Config.User}}' my-portfolio:test)" = "nextjs"
+          test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' my-portfolio:test)" = "${GITHUB_SHA}"
+
+      - name: Start container
+        run: |
+          docker run \
+            --detach \
+            --name my-portfolio-test \
+            --publish 127.0.0.1:3000:3000 \
+            my-portfolio:test
+
+      - name: Wait for Docker healthcheck
+        run: |
+          for attempt in $(seq 1 60); do
+            status="$(docker inspect --format '{{.State.Health.Status}}' my-portfolio-test)"
+            if [ "$status" = "healthy" ]; then
+              exit 0
+            fi
+            if [ "$status" = "unhealthy" ]; then
+              docker logs my-portfolio-test
+              exit 1
+            fi
+            sleep 1
+          done
+
+          docker logs my-portfolio-test
+          exit 1
+
+      - name: Verify endpoints
+        run: |
+          health="$(curl --fail --silent --show-error http://127.0.0.1:3000/api/health)"
+          test "$health" = "{\"status\":\"ok\",\"revision\":\"${GITHUB_SHA}\"}"
+          curl --fail --silent --show-error --output /dev/null http://127.0.0.1:3000/
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker logs my-portfolio-test
+
+      - name: Remove test container
+        if: always()
+        run: docker rm --force my-portfolio-test || true
