@@ -85,7 +85,8 @@ Notes :
 - `npm run dev` écoute sur `http://localhost:8080`, car le port est fixé dans
   `package.json`.
 - Le README généré mentionne encore le port 3000 : cette indication est obsolète.
-- Aucun script de test ni framework de test n’est configuré.
+- Aucun framework de tests fonctionnels ou unitaires n’est configuré ; la CI couvre
+  actuellement le lint, les types, les builds Next.js/Docker et un smoke test HTTP.
 - `npm run start` n’impose pas explicitement le port 8080.
 
 ## 4. Variables d’environnement
@@ -118,9 +119,19 @@ Le build accepte `APP_REVISION` comme argument et le conserve dans un label OCI 
 que dans l'environnement du conteneur. Le healthcheck Docker interroge
 `GET /api/health`. Aucun fichier `.env` n'entre dans le contexte Docker.
 
-Le workflow `.github/workflows/container-check.yml` construit et démarre l'image sur
-chaque Pull Request. Il vérifie le processus non-root, le label de révision, le
-healthcheck et la page d'accueil, sans publier l'image.
+Le workflow `.github/workflows/ci.yml` exécute deux jobs distincts :
+
+- `validate` s'exécute sur chaque Pull Request, push vers `main` et lancement manuel.
+  Il installe les dépendances, lance ESLint et TypeScript, construit Next.js, puis
+  construit et démarre l'image Docker afin de vérifier son utilisateur non-root, son
+  label de révision, son healthcheck et la page d'accueil ;
+- `publish` ne s'exécute qu'après la réussite de `validate` sur `main`. Il publie la
+  même révision dans GHCR sous les tags immuable `sha-<commit>` et mobile `main`.
+
+Le job de validation est en lecture seule. Seul le job de publication reçoit
+temporairement la permission `packages: write` via `GITHUB_TOKEN`; aucun jeton GitHub
+longue durée n'est stocké dans le dépôt. L'image cible est
+`ghcr.io/alexcommeau/my-portfolio`.
 
 ## 6. Architecture générale
 
@@ -180,7 +191,7 @@ portant `"use client"` gèrent les interactions, les animations ou le chat.
 ├── .dockerignore                  # exclut secrets, dépendances et artefacts locaux
 ├── .nvmrc                         # Node.js 22.23.1
 ├── .github/workflows/
-│   └── container-check.yml        # build et smoke test Docker des Pull Requests
+│   └── ci.yml                     # validation PR/main et publication GHCR sur main
 ├── components.json                # Configuration shadcn et alias
 ├── next.config.ts                 # allowedDevOrigins
 ├── package.json                   # Scripts et dépendances
