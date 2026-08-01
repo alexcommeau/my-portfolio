@@ -1,7 +1,7 @@
 # Cartographie du projet
 
 > Document de reprise destiné aux humains et aux agents IA. Il décrit le dépôt tel
-> qu’il a été vérifié le 31 juillet 2026. Le code reste la source de vérité : avant
+> qu’il a été vérifié le 1er août 2026. Le code reste la source de vérité : avant
 > toute intervention, relire `AGENTS.md`, exécuter `git status --short` et vérifier
 > les fichiers concernés.
 
@@ -53,7 +53,7 @@ Toujours préserver les modifications déjà présentes dans le worktree.
 
 | Élément | Version / rôle |
 |---|---|
-| Node.js | `>=20.9.0` requis par Next.js 16 |
+| Node.js | `>=22.0.0` ; Docker et `.nvmrc` fixent `22.23.1` |
 | Next.js | `16.2.10`, App Router |
 | React / React DOM | `19.2.4` |
 | TypeScript | `^5`, mode strict |
@@ -71,14 +71,17 @@ npm install
 cp .env.local.example .env.local
 npm run dev
 npm run lint
+npm run typecheck
 npm run build
 npm run start
+docker build --build-arg APP_REVISION=$(git rev-parse HEAD) -t my-portfolio:local .
+docker run --rm -p 3000:3000 my-portfolio:local
 ```
 
 Notes :
 
-- Le dépôt ne fixe pas encore cette exigence Node.js dans un champ `engines` ou un
-  fichier `.nvmrc`. Vérifier `node --version` avant l’installation ou le build.
+- `package.json` exige Node.js 22 ou plus et `.nvmrc` fixe la version locale à
+  `22.23.1`, identique à l'image de construction Docker.
 - `npm run dev` écoute sur `http://localhost:8080`, car le port est fixé dans
   `package.json`.
 - Le README généré mentionne encore le port 3000 : cette indication est obsolète.
@@ -95,6 +98,7 @@ Le modèle attendu est documenté dans `.env.local.example`.
 | `LLAMACPP_MODEL` | non | identifiant du modèle ; fallback `local-model` |
 | `LLAMACPP_API_KEY` | selon le serveur | lu par l’application, mais absent du fichier exemple |
 | `DEV_TUNNEL_ORIGIN` | non | origine autorisée en développement dans `next.config.ts` |
+| `APP_REVISION` | non | SHA Git exposé par `/api/health` ; `unknown` hors build Docker versionné |
 
 Attention au conflit de ports : le serveur Next.js de développement occupe le port
 8080, également utilisé par le fallback de `LLAMACPP_BASE_URL`. Il faut presque
@@ -102,7 +106,23 @@ toujours définir cette variable vers un autre port ou une autre machine.
 
 Ne jamais mettre de secret dans ce document ou committer `.env.local`.
 
-## 5. Architecture générale
+## 5. Exécution Docker
+
+`next.config.ts` active `output: "standalone"`. Le Dockerfile multi-stage utilise
+l'image officielle `node:22.23.1-bookworm-slim`, verrouillée par digest, installe les
+dépendances avec `npm ci`, construit Next.js, puis copie uniquement le serveur tracé,
+`public/` et `.next/static/` dans l'image finale. Le processus s'exécute avec
+l'utilisateur non-root `nextjs` sur le port 3000.
+
+Le build accepte `APP_REVISION` comme argument et le conserve dans un label OCI ainsi
+que dans l'environnement du conteneur. Le healthcheck Docker interroge
+`GET /api/health`. Aucun fichier `.env` n'entre dans le contexte Docker.
+
+Le workflow `.github/workflows/container-check.yml` construit et démarre l'image sur
+chaque Pull Request. Il vérifie le processus non-root, le label de révision, le
+healthcheck et la page d'accueil, sans publier l'image.
+
+## 6. Architecture générale
 
 ```mermaid
 flowchart TD
@@ -111,6 +131,7 @@ flowchart TD
     Blog["GET /blog/[slug]"]
     ChatUI["About / useChat"]
     ChatAPI["POST /api/chat"]
+    Health["GET /api/health"]
     Prompt["lib/system-prompt.ts"]
     Data["lib/data.ts"]
     LLM["Serveur compatible OpenAI"]
@@ -127,12 +148,13 @@ flowchart TD
     Prompt --> Data
     ChatAPI --> LLM
     LLM -. flux de tokens .-> ChatUI
+    Health --> Revision["APP_REVISION"]
 ```
 
 La majorité des composants d’affichage sont rendus côté serveur. Les composants
 portant `"use client"` gèrent les interactions, les animations ou le chat.
 
-## 6. Arborescence commentée
+## 7. Arborescence commentée
 
 ```text
 .
@@ -141,6 +163,7 @@ portant `"use client"` gèrent les interactions, les animations ou le chat.
 │   ├── page.tsx                   # Composition et ordre des sections
 │   ├── globals.css                # Tailwind, thème et animations
 │   ├── api/chat/route.ts          # POST de streaming vers le modèle
+│   ├── api/health/route.ts        # état du conteneur et révision déployée
 │   └── blog/[slug]/page.tsx       # Page statique dynamique d’un article
 ├── components/
 │   ├── portfolio/                 # Sections et interactions de l’accueil
@@ -153,6 +176,11 @@ portant `"use client"` gèrent les interactions, les animations ou le chat.
 │   └── utils.ts                   # cn() = clsx + tailwind-merge
 ├── public/
 │   └── images/hero.webp           # Seule image métier finale utilisée
+├── Dockerfile                     # image Next.js standalone multi-stage
+├── .dockerignore                  # exclut secrets, dépendances et artefacts locaux
+├── .nvmrc                         # Node.js 22.23.1
+├── .github/workflows/
+│   └── container-check.yml        # build et smoke test Docker des Pull Requests
 ├── components.json                # Configuration shadcn et alias
 ├── next.config.ts                 # allowedDevOrigins
 ├── package.json                   # Scripts et dépendances
@@ -165,7 +193,7 @@ portant `"use client"` gèrent les interactions, les animations ou le chat.
 Les SVG Next/Vercel encore présents dans `public/` sont des reliquats du scaffold et
 ne sont pas importés.
 
-## 7. Routes et points d’entrée
+## 8. Routes et points d’entrée
 
 ### `GET /`
 
@@ -209,9 +237,15 @@ convertit les messages UI, appelle le fournisseur `llamacpp`, ajoute `systemProm
 puis renvoie un flux compatible avec `useChat`.
 
 `maxDuration` vaut 30 secondes. La route est publique, sans authentification, quota,
-rate limiting ni traitement d’erreur personnalisé.
+rate limiting ni traitement d'erreur personnalisé.
 
-## 8. Cartographie des composants
+### `GET /api/health`
+
+La route renvoie un JSON `{ status: "ok", revision }` avec HTTP 200 et l'en-tête
+`Cache-Control: no-store`. `revision` provient de `APP_REVISION`, injecté comme
+argument lors du build Docker, ou vaut `unknown` en développement local.
+
+## 9. Cartographie des composants
 
 ### `components/portfolio/`
 
@@ -249,7 +283,7 @@ rate limiting ni traitement d’erreur personnalisé.
 `button.tsx`, `input.tsx`, `textarea.tsx` et `sheet.tsx` sont des primitives génériques.
 Elles suivent le style shadcn/Base UI. Ne pas y placer de contenu métier.
 
-## 9. Sources de données
+## 10. Sources de données
 
 `lib/data.ts` centralise :
 
@@ -269,7 +303,7 @@ Elles suivent le style shadcn/Base UI. Ne pas y placer de contenu métier.
 Ne sont pas injectés dans le prompt : `aboutCards`, `roles`, `blogPosts`, `chatQA`,
 les articles et les coordonnées écrites directement dans les composants.
 
-## 10. Flux interactifs
+## 11. Flux interactifs
 
 ### Chat
 
@@ -296,7 +330,7 @@ message générique. L’historique reste uniquement dans l’état React de la 
 `Contact` conserve quatre champs dans `useState`. À la soumission, il vide les champs
 et affiche un succès. Aucun `fetch`, email, stockage ou endpoint n’est appelé.
 
-## 11. Styles et conventions
+## 12. Styles et conventions
 
 - Mode sombre forcé par `app/layout.tsx`.
 - Polices Inter et JetBrains Mono via `next/font`.
@@ -309,7 +343,7 @@ et affiche un succès. Aucun `fetch`, email, stockage ou endpoint n’est appel�
 - Exports applicatifs généralement nommés ; pages/layouts en export par défaut.
 - Utiliser `cn()` pour les classes conditionnelles.
 
-## 12. Procédures d’extension
+## 13. Procédures d’extension
 
 ### Modifier une information du portfolio
 
@@ -353,7 +387,7 @@ citation ; elles n’existent pas encore.
 Ajouter l’asset optimisé dans `public/images/`, puis remplacer `ImagePlaceholder` par
 `next/image` avec dimensions, `alt` descriptif et `sizes` responsive.
 
-## 13. Inachèvements et risques connus
+## 14. Inachèvements et risques connus
 
 - GitHub, LinkedIn, CV, « Voir l’architecture » et certains liens projet : `href="#"`.
 - Email : `alex.commeau@example.com`, donc adresse placeholder.
@@ -364,14 +398,13 @@ Ajouter l’asset optimisé dans `public/images/`, puis remplacer `ImagePlacehol
 - Le système est présenté comme RAG, mais le backend est un prompt statique enrichi.
 - `.env.local.example` omet `LLAMACPP_API_KEY`, pourtant l’application la lit.
 - API chat sans validation du corps, limitation d’usage ou protection d’accès.
-- Version Node.js requise non déclarée dans `package.json` ou `.nvmrc`.
 - Aucun test automatisé, CI visible, suivi analytique ou SEO avancé.
 - README générique et incorrect sur le port de développement.
 
 Ces points ne sont pas forcément à corriger dans une mission non liée. Ils évitent
 surtout de prendre un placeholder pour une fonctionnalité finale.
 
-## 14. Checklist de reprise pour une IA
+## 15. Checklist de reprise pour une IA
 
 1. Lire la demande et délimiter le périmètre.
 2. Lire `AGENTS.md`.
@@ -379,19 +412,20 @@ surtout de prendre un placeholder pour une fonctionnalité finale.
 4. Lire les guides Next.js locaux pertinents avant d’écrire du code.
 5. Relire les fichiers concernés et leurs consommateurs.
 6. Modifier la plus petite surface cohérente.
-7. Exécuter au minimum `npm run lint`.
+7. Exécuter au minimum `npm run lint` et `npm run typecheck`.
 8. Exécuter `npm run build` pour une route, le rendu, la configuration, une dépendance,
    un article ou des données statiques.
 9. Vérifier visuellement mobile et desktop pour un changement d’interface.
 10. Mettre ce document à jour si l’architecture, les flux, commandes ou variables
     d’environnement changent.
 
-## 15. Validation actuelle
+## 16. Validation actuelle
 
 En l’absence de suite de tests :
 
 ```bash
 npm run lint
+npm run typecheck
 npm run build
 ```
 
