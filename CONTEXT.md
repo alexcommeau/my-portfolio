@@ -21,7 +21,8 @@ ni CMS. Le contenu métier est principalement codé dans `lib/data.ts`.
 
 État fonctionnel important :
 
-- le chat est un vrai flux réseau et diffuse les réponses du modèle ;
+- le chat est visible dans la section À propos, mais temporairement désactivé : son
+  interface est en lecture seule et `POST /api/chat` répond `503` pendant la maintenance ;
 - le formulaire de contact est simulé côté navigateur et n’envoie rien ;
 - plusieurs liens, images et contenus de projets sont encore des placeholders ;
 - l’interface parle de « RAG », mais aucune recherche documentaire/vectorielle
@@ -98,12 +99,16 @@ Le modèle attendu est documenté dans `.env.local.example`.
 | `LLAMACPP_BASE_URL` | en pratique oui | API compatible OpenAI ; fallback `http://localhost:8080/v1` |
 | `LLAMACPP_MODEL` | non | identifiant du modèle ; fallback `local-model` |
 | `LLAMACPP_API_KEY` | selon le serveur | lu par l’application, mais absent du fichier exemple |
-| `DEV_TUNNEL_ORIGIN` | non | origine autorisée en développement dans `next.config.ts` |
 | `APP_REVISION` | non | SHA Git exposé par `/api/health` ; `unknown` hors build Docker versionné |
 
 Attention au conflit de ports : le serveur Next.js de développement occupe le port
 8080, également utilisé par le fallback de `LLAMACPP_BASE_URL`. Il faut presque
 toujours définir cette variable vers un autre port ou une autre machine.
+
+`next.config.ts` autorise explicitement `macbook-dev.local` et l'adresse LAN
+`192.168.1.58` pour les ressources et endpoints propres au serveur de développement
+Next.js. Si l'adresse ou le nom local change, il faut mettre à jour cette liste et
+redémarrer le serveur. Ces hôtes ne doivent pas être remplacés par `*`.
 
 Ne jamais mettre de secret dans ce document ou committer `.env.local`.
 
@@ -154,11 +159,8 @@ flowchart TD
     Blog --> Data
     Blog --> Registry
     Home --> ChatUI
-    ChatUI --> ChatAPI
-    ChatAPI --> Prompt
-    Prompt --> Data
-    ChatAPI --> LLM
-    LLM -. flux de tokens .-> ChatUI
+    ChatUI -. désactivé temporairement .-> ChatAPI
+    ChatAPI -. réponse 503 .-> ChatUI
     Health --> Revision["APP_REVISION"]
 ```
 
@@ -243,12 +245,14 @@ leur slug.
 
 ### `POST /api/chat`
 
-La route attend `{ messages: UIMessage[] }`, lit le corps sans validation explicite,
-convertit les messages UI, appelle le fournisseur `llamacpp`, ajoute `systemPrompt`,
-puis renvoie un flux compatible avec `useChat`.
+La route est temporairement neutralisée et répond `503` avec un message de
+maintenance. L'interface du chat reste visible dans
+`components/portfolio/about.tsx`, mais ne charge plus `useChat` et désactive les
+suggestions ainsi que la saisie. La logique d'inférence, le prompt et les dépendances
+sont conservés pour la remise en service ultérieure. Les anciens extraits de la route
+et de l'interface active sont gardés en commentaires dans les fichiers concernés.
 
-`maxDuration` vaut 30 secondes. La route est publique, sans authentification, quota,
-rate limiting ni traitement d'erreur personnalisé.
+La route reste publique, sans authentification, quota ou rate limiting.
 
 ### `GET /api/health`
 
@@ -264,7 +268,7 @@ argument lors du build Docker, ou vaut `unknown` en développement local.
 |---|---|---|
 | `navbar.tsx` | navigation desktop/mobile et scroll fluide | client ; `navItems`, `Sheet` |
 | `hero.tsx` | introduction, rôle animé, portrait avec tilt et CTA | client ; Motion, `roles`, `hero.webp` |
-| `about.tsx` | onglets Profil/Chat et interface du chat | client ; `useChat`, `/api/chat` |
+| `about.tsx` | onglets Profil/Chat et interface du chat | client ; état de maintenance temporaire |
 | `ui-context.tsx` | état partagé `aboutTab` | client |
 | `skills.tsx` | grilles de compétences | `skillGroups` |
 | `experience.tsx` | chronologie professionnelle | `experiences` |
@@ -318,12 +322,10 @@ les articles et les coordonnées écrites directement dans les composants.
 
 ### Chat
 
-`About` crée `useChat` avec `DefaultChatTransport({ api: "/api/chat" })`. Les boutons
-de `chatQA` et le formulaire envoient les questions. Les messages sont affichés depuis
-leurs parties `text` et la zone défile automatiquement.
-
-Le statut `submitted` affiche « l’assistant écrit… ». Une erreur réseau affiche un
-message générique. L’historique reste uniquement dans l’état React de la page.
+`About` affiche temporairement un panneau de maintenance statique. Les suggestions,
+la saisie et le transport `useChat` ne sont pas chargés, et `POST /api/chat` répond
+`503`. Le code de référence nécessaire à la réactivation est conservé en commentaires
+dans la route et le composant.
 
 ### Navigation et état partagé
 

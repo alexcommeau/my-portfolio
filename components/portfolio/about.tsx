@@ -1,20 +1,36 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
 import { Reveal } from "@/components/portfolio/reveal";
 import { useAboutTabContext } from "@/components/portfolio/ui-context";
-import { Input } from "@/components/ui/input";
-import { aboutCards, bio, chatQA } from "@/lib/data";
+import { aboutCards, bio } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
-function messageText(parts: { type: string; text?: string }[]) {
-  return parts
-    .filter((part) => part.type === "text")
-    .map((part) => part.text)
-    .join("");
-}
+/*
+ * ANCIENNE VERSION ACTIVE — à restaurer avec la route API ci-dessus.
+ *
+ * import { useEffect, useRef, useState } from "react";
+ * import { useChat } from "@ai-sdk/react";
+ * import { DefaultChatTransport } from "ai";
+ * import { Input } from "@/components/ui/input";
+ * import { aboutCards, bio, chatQA } from "@/lib/data";
+ *
+ * Dans About(), restaurer :
+ * const [chatInput, setChatInput] = useState("");
+ * const { messages, sendMessage, status, error } = useChat({
+ *   transport: new DefaultChatTransport({ api: "/api/chat" }),
+ * });
+ * const chatTyping = status === "submitted";
+ * const sendChatMessage = (e: React.FormEvent) => {
+ *   e.preventDefault();
+ *   const text = chatInput.trim();
+ *   if (!text) return;
+ *   sendMessage({ text });
+ *   setChatInput("");
+ * };
+ *
+ * Puis remplacer le panneau de maintenance par le rendu des messages, les
+ * boutons chatQA et le formulaire Input qui appelle sendChatMessage.
+ */
 
 function GpuIcon({ className }: { className?: string }) {
   return (
@@ -43,46 +59,8 @@ function InfoIcon({ className }: { className?: string }) {
   );
 }
 
-function SendIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      aria-hidden="true"
-    >
-      <path d="M5 12h14M13 6l6 6-6 6" />
-    </svg>
-  );
-}
-
 export function About() {
   const { aboutTab, setAboutTab } = useAboutTabContext();
-  const [chatInput, setChatInput] = useState("");
-  const { messages, sendMessage, status, error } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
-  });
-  const chatTyping = status === "submitted";
-  const chatScrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = chatScrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages, chatTyping, error]);
-
-  const askQuestion = (question: string) => {
-    sendMessage({ text: question });
-  };
-
-  const sendChatMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    const text = chatInput.trim();
-    if (!text) return;
-    sendMessage({ text });
-    setChatInput("");
-  };
 
   return (
     <section
@@ -166,7 +144,7 @@ export function About() {
                   <span className="text-cyan-400">✦</span> Assistant IA auto-hébergé
                 </div>
                 <div className="mt-1 text-[12.5px] text-zinc-500">
-                  Conçu, hébergé et déployé par mes soins • Système RAG
+                  Temporairement indisponible
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -217,89 +195,30 @@ export function About() {
                   Questions suggérées
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  {chatQA.map((item) => (
-                    <button
-                      key={item.q}
-                      onClick={() => askQuestion(item.q)}
-                      className="cursor-pointer rounded-lg border border-zinc-800 px-3 py-2.5 text-left text-[13px] leading-tight text-zinc-300 transition-colors hover:border-cyan-400 hover:text-cyan-400"
-                    >
-                      {item.q}
-                    </button>
-                  ))}
+                  <div className="rounded-lg border border-zinc-800 px-3 py-2.5 text-[13px] leading-tight text-zinc-600">
+                    Les questions suggérées seront de nouveau disponibles à la
+                    remise en service.
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col px-6.5 py-6">
-                <div
-                  ref={chatScrollRef}
-                  className="flex h-[350px] flex-col gap-3.5 overflow-y-auto pr-1"
-                >
-                  {messages.length === 0 && (
-                    <div className="m-auto max-w-[420px] text-center">
-                      <div className="mb-3.5 text-[19px] font-bold text-zinc-100">
-                        Bonjour 👋 Je suis l&apos;assistant IA d&apos;Alex.
-                      </div>
-                      <div className="text-sm leading-relaxed text-zinc-500">
-                        Je peux vous parler de son parcours, de ses compétences,
-                        de ses projets, ou de la façon dont j&apos;ai moi-même été
-                        construit.
-                      </div>
-                    </div>
-                  )}
-                  {messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={cn(
-                        "max-w-[80%]",
-                        msg.role === "user" ? "self-end" : "self-start"
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "rounded-lg px-3.5 py-2.5 text-[13.5px] leading-normal",
-                          msg.role === "user"
-                            ? "rounded-br-sm bg-cyan-400 font-semibold text-[#052027]"
-                            : "rounded-bl-sm border border-zinc-700 bg-zinc-800 text-zinc-300"
-                        )}
-                      >
-                        {messageText(msg.parts)}
-                      </div>
-                    </div>
-                  ))}
-                  {chatTyping && (
-                    <div className="max-w-[80%] self-start">
-                      <div className="rounded-lg border border-zinc-700 bg-zinc-800 px-3.5 py-2.5 font-mono text-[12.5px] text-zinc-400">
-                        l&apos;assistant écrit…
-                      </div>
-                    </div>
-                  )}
-                  {error && (
-                    <div className="max-w-[80%] self-start">
-                      <div className="rounded-lg border border-red-900/50 bg-red-950/40 px-3.5 py-2.5 text-[13px] text-red-300">
-                        Impossible de joindre le modèle — vérifiez que le
-                        serveur est bien démarré et réessayez.
-                      </div>
-                    </div>
-                  )}
+              <div className="flex min-h-[438px] flex-col px-6.5 py-6">
+                <div className="m-auto max-w-[470px] text-center">
+                  <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10 text-xl text-amber-300">
+                    i
+                  </div>
+                  <div className="mb-3 text-[19px] font-bold text-zinc-100">
+                    Assistant temporairement indisponible
+                  </div>
+                  <div className="text-sm leading-relaxed text-zinc-400">
+                    Le serveur qui fait fonctionner cet assistant est
+                    momentanément arrêté pour maintenance. Le chat reste visible,
+                    mais aucune question ne peut être envoyée pour le moment.
+                    Merci de revenir un peu plus tard.
+                  </div>
                 </div>
-                <form
-                  onSubmit={sendChatMessage}
-                  className="mt-3.5 flex gap-2 border-t border-zinc-800 pt-3.5"
-                >
-                  <Input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Écrire un message…"
-                    className="h-auto flex-1 rounded-md border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-[13.5px] text-zinc-200"
-                  />
-                  <button
-                    type="submit"
-                    aria-label="Envoyer"
-                    className="cursor-pointer flex size-9.5 shrink-0 items-center justify-center rounded-md bg-cyan-400 text-[#052027] transition-colors hover:bg-cyan-300"
-                  >
-                    <SendIcon className="size-4" />
-                  </button>
-                </form>
+                <div className="mt-3.5 border-t border-zinc-800 pt-3.5 text-center text-[12.5px] text-zinc-600">
+                  Saisie désactivée pendant la maintenance
+                </div>
               </div>
             </div>
           </div>

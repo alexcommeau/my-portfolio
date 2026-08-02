@@ -2,9 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  allowedDevOrigins: process.env.DEV_TUNNEL_ORIGIN
-    ? [process.env.DEV_TUNNEL_ORIGIN]
-    : [],
+  allowedDevOrigins: ["macbook-dev.local", "192.168.1.58"],
 };
 
 export default nextConfig;
