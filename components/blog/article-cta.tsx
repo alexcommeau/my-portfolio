@@ -7,14 +7,15 @@ export function ArticleCta() {
         Une question sur cet article ?
       </div>
       <div className="mb-5 text-[14.5px] text-zinc-400">
-        Discutez-en directement avec mon assistant IA ou écrivez-moi.
+        Mon assistant IA est temporairement indisponible pour maintenance. Vous
+        pouvez tout de même m&apos;écrire directement.
       </div>
       <div className="flex flex-wrap justify-center gap-3">
         <Link
           href="/#about"
           className="rounded-md bg-cyan-400 px-5.5 py-2.75 text-sm font-semibold text-[#052027] transition-colors hover:bg-amber-400"
         >
-          ✦ Discuter avec l&apos;IA
+          Voir l&apos;information
         </Link>
         <Link
           href="/#contact"
