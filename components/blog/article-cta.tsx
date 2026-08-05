@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { SectionLink } from "@/components/portfolio/section-link";
 
 export function ArticleCta() {
   return (
@@ -11,18 +11,18 @@ export function ArticleCta() {
         pouvez tout de même m&apos;écrire directement.
       </div>
       <div className="flex flex-wrap justify-center gap-3">
-        <Link
-          href="/#about"
+        <SectionLink
+          sectionId="about"
           className="rounded-md bg-cyan-400 px-5.5 py-2.75 text-sm font-semibold text-[#052027] transition-colors hover:bg-amber-400"
         >
           Voir l&apos;information
-        </Link>
-        <Link
-          href="/#contact"
+        </SectionLink>
+        <SectionLink
+          sectionId="contact"
           className="rounded-md border border-zinc-800 px-5.5 py-2.75 text-sm font-semibold text-zinc-200 transition-colors hover:border-zinc-600"
         >
           Me contacter
-        </Link>
+        </SectionLink>
       </div>
     </div>
   );

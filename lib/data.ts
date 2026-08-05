@@ -5,10 +5,11 @@ export type NavItem = {
 
 export const navItems: NavItem[] = [
   { label: "À propos", href: "#about" },
+  { label: "Projets", href: "#projects" },
   { label: "Compétences", href: "#skills" },
   { label: "Expérience", href: "#experience" },
-  { label: "Projets", href: "#projects" },
   { label: "Formation", href: "#education" },
+  { label: "Blog", href: "/blog" },
   { label: "Contact", href: "#contact" },
 ];
 
@@ -20,8 +21,9 @@ export const roles = [
 ];
 
 export const bio: string[] = [
-  "Avec plusieurs années d'expérience en développement fullstack, Alex a travaillé sur l'ensemble du cycle produit : architecture d'API, interfaces React, bases de données, déploiement cloud. Cette pratique l'a naturellement mené vers l'ingénierie IA, où Alex conçoit aujourd'hui des agents et des pipelines RAG qui combinent connaissance métier et modèles de langage.",
-  "Ce qui motive Alex : transformer des besoins ambigus en systèmes simples, robustes et agréables à utiliser — que ce soit pour un utilisateur final ou pour l'équipe qui maintient le code.",
+  "Je suis Alex, développeur fullstack et passionné par les technologies qui permettent de créer des choses utiles. J'aime comprendre comment les systèmes fonctionnent, expérimenter de nouvelles idées et transformer mes découvertes en projets concrets.",
+  "Aujourd'hui, je m'intéresse particulièrement à l'intelligence artificielle, aux agents et à l'auto-hébergement. Je prends plaisir à apprendre par la pratique, que ce soit en développant une application, en testant un nouveau modèle ou en faisant évoluer mon homelab.",
+  "En dehors du développement, je m'intéresse à des activités qui demandent précision et créativité, comme la gravure et la bijouterie. Le sport occupe aussi une place importante dans mon quotidien : il m'aide à garder un bon équilibre et à rester discipliné.",
 ];
 
 export type AboutCard = {
@@ -33,33 +35,23 @@ export type AboutCard = {
 export const aboutCards: AboutCard[] = [
   {
     glyph: "{}",
-    title: "Fullstack",
-    desc: "Applications web complètes, du schéma de données à l'interface.",
+    title: "Développement fullstack",
+    desc: "Concevoir des applications complètes, de l'architecture technique jusqu'à l'interface utilisateur.",
   },
   {
     glyph: "◆",
-    title: "Intelligence Artificielle",
-    desc: "Agents et pipelines RAG connectés à des LLMs.",
+    title: "Intelligence artificielle",
+    desc: "Explorer les modèles, les agents et les pipelines RAG pour construire des usages concrets.",
   },
   {
     glyph: "</>",
-    title: "Code propre",
-    desc: "Un code lisible, testé et pensé pour durer.",
+    title: "Qualité logicielle",
+    desc: "Privilégier un code lisible, maintenable et adapté aux besoins réels du projet.",
   },
   {
     glyph: "→",
-    title: "Résolution de problèmes",
-    desc: "Décomposer le complexe en solutions simples.",
-  },
-  {
-    glyph: "⚡",
-    title: "Automatisation",
-    desc: "Workflows n8n et intégrations qui font gagner du temps.",
-  },
-  {
-    glyph: "⟷",
-    title: "Collaboration",
-    desc: "Travailler efficacement avec des équipes produit & data.",
+    title: "Conception & résolution",
+    desc: "Analyser les problématiques complexes et les transformer en solutions claires et durables.",
   },
 ];
 
@@ -71,7 +63,7 @@ export type SkillGroup = {
 export const skillGroups: SkillGroup[] = [
   {
     title: "Frontend",
-    tags: ["React", "Next.js", "TypeScript", "Tailwind CSS", "TanStack Query"],
+    tags: ["React", "Next.js", "TypeScript", "Tailwind CSS"],
   },
   {
     title: "Backend",
@@ -82,7 +74,6 @@ export const skillGroups: SkillGroup[] = [
       "PostgreSQL",
       "REST / GraphQL",
       "Nest",
-      "MongoDB",
       "Java",
     ],
   },
@@ -109,7 +100,7 @@ export const skillGroups: SkillGroup[] = [
   },
   {
     title: "Outils",
-    tags: ["Git / GitHub", "Docker Compose", "Postman", "Jira"],
+    tags: ["Git / GitHub", "Docker Compose", "Jira", "Claude Code", "Codex"],
   },
   {
     title: "Bonnes pratiques",
@@ -165,14 +156,21 @@ export const projectsData: Project[] = [
     category: "ia",
     tags: ["IA", "RAG"],
     title: "Assistant documentaire IA",
-    desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Un agent RAG qui répond aux questions internes à partir de la base de connaissances de l'entreprise, avec citations des sources.",
+    desc: "Un agent RAG auto-hébergé qui répond aux questions à partir d'une base de connaissances, avec des citations pour retrouver facilement les sources.",
   },
   {
     id: "proj-2",
     category: "web",
     tags: ["Web", "Fullstack"],
     title: "Plateforme de gestion de projets",
-    desc: "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Une application fullstack pour suivre l'avancement d'équipes, avec tableaux de bord temps réel.",
+    desc: "Description à venir.",
+  },
+  {
+    id: "proj-3",
+    category: "web",
+    tags: ["Web"],
+    title: "Projet à venir",
+    desc: "Description à venir.",
   },
 ];
 
@@ -235,6 +233,7 @@ export type BlogPost = {
   excerpt: string;
 };
 
+// Ordre du plus récent au plus ancien : `app/blog/page.tsx` met blogPosts[0] à la une.
 export const blogPosts: BlogPost[] = [
   {
     slug: "rag-auto-heberge",
@@ -244,6 +243,33 @@ export const blogPosts: BlogPost[] = [
     title: "Construire un agent RAG auto-hébergé de A à Z",
     excerpt:
       "Retour d'expérience sur la conception d'un assistant documentaire qui tourne entièrement sur mon homelab, du choix du modèle au pipeline d'ingestion.",
+  },
+  {
+    slug: "homelab-docker-compose",
+    tag: "Homelab",
+    date: "18 mai 2026",
+    readTime: "5 min",
+    title: "Structurer un homelab avec Docker Compose",
+    excerpt:
+      "Comment j'organise une dizaine de services auto-hébergés avec un seul fichier Compose lisible, des réseaux isolés et des sauvegardes qui tiennent la route.",
+  },
+  {
+    slug: "next-app-router-workflow",
+    tag: "Web",
+    date: "2 mai 2026",
+    readTime: "7 min",
+    title: "Next.js App Router : ce qui a changé dans mon workflow",
+    excerpt:
+      "Server Components, layouts imbriqués et streaming ont rebattu les cartes. Les habitudes que j'ai gardées, celles que j'ai abandonnées, et pourquoi.",
+  },
+  {
+    slug: "prompt-engineering-patterns",
+    tag: "IA",
+    date: "14 avril 2026",
+    readTime: "5 min",
+    title: "Prompt engineering : les patterns qui tiennent en prod",
+    excerpt:
+      "Au-delà des astuces virales, quelques schémas de prompts robustes qui survivent aux changements de modèle et aux entrées utilisateur imprévisibles.",
   },
 ];
 

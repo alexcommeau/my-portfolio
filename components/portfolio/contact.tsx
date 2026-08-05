@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Reveal } from "@/components/portfolio/reveal";
+import { SectionReveal } from "@/components/ui/section-reveal";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -25,10 +25,10 @@ export function Contact() {
 
   return (
     <section
+      id="contact"
       className="relative border-t border-zinc-900 bg-white/[1.5%]"
     >
-      <span id="contact" aria-hidden="true" className="pointer-events-none absolute top-24" />
-      <Reveal className="mx-auto max-w-6xl px-8 py-24">
+      <SectionReveal className="mx-auto max-w-6xl px-8 py-24">
         <div className="mb-10 text-center">
           <h2 className="mb-3 text-4xl font-extrabold tracking-tight">
             Contactez-
@@ -111,7 +111,7 @@ export function Contact() {
             </form>
           )}
         </div>
-      </Reveal>
+      </SectionReveal>
     </section>
   );
 }

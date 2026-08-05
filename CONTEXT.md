@@ -1,7 +1,7 @@
 # Cartographie du projet
 
 > Document de reprise destiné aux humains et aux agents IA. Il décrit le dépôt tel
-> qu’il a été vérifié le 1er août 2026. Le code reste la source de vérité : avant
+> qu’il a été vérifié le 4 août 2026. Le code reste la source de vérité : avant
 > toute intervention, relire `AGENTS.md`, exécuter `git status --short` et vérifier
 > les fichiers concernés.
 
@@ -9,10 +9,10 @@
 
 Ce dépôt est le portfolio personnel d’Alex Commeau, en français, avec :
 
-- une page d’accueil mono-page présentant profil, compétences, expérience, projets,
-  formation, blog et contact ;
+- une page d’accueil mono-page présentant profil, projets, compétences, expérience,
+  formation et contact ;
 - un assistant conversationnel connecté à un serveur d’inférence compatible OpenAI ;
-- un blog statique dont les articles sont des composants React/TSX ;
+- un index de blog autonome et des articles statiques écrits en composants React/TSX ;
 - un design sombre, responsive, construit avec Tailwind CSS et des primitives
   Base UI/shadcn.
 
@@ -52,18 +52,18 @@ Toujours préserver les modifications déjà présentes dans le worktree.
 
 ## 3. Stack et commandes
 
-| Élément | Version / rôle |
-|---|---|
-| Node.js | `>=22.0.0` ; Docker et `.nvmrc` fixent `22.23.1` |
-| Next.js | `16.2.10`, App Router |
-| React / React DOM | `19.2.4` |
-| TypeScript | `^5`, mode strict |
-| Tailwind CSS | `^4`, via PostCSS |
-| AI SDK | `ai ^7.0.29`, `@ai-sdk/react ^4.0.32` |
-| Fournisseur IA | `@ai-sdk/openai-compatible ^3.0.11` |
-| Animations interactives | Motion `^12.43.0` |
-| Primitives UI | Base UI, shadcn, Lucide React |
-| Gestionnaire | npm, verrouillage par `package-lock.json` |
+| Élément                 | Version / rôle                                   |
+| ----------------------- | ------------------------------------------------ |
+| Node.js                 | `>=22.0.0` ; Docker et `.nvmrc` fixent `22.23.1` |
+| Next.js                 | `16.2.10`, App Router                            |
+| React / React DOM       | `19.2.4`                                         |
+| TypeScript              | `^5`, mode strict                                |
+| Tailwind CSS            | `^4`, via PostCSS                                |
+| AI SDK                  | `ai ^7.0.29`, `@ai-sdk/react ^4.0.32`            |
+| Fournisseur IA          | `@ai-sdk/openai-compatible ^3.0.11`              |
+| Animations interactives | Motion `^12.43.0`                                |
+| Primitives UI           | Base UI, shadcn, Lucide React                    |
+| Gestionnaire            | npm, verrouillage par `package-lock.json`        |
 
 Commandes à lancer depuis la racine :
 
@@ -85,6 +85,8 @@ Notes :
   `22.23.1`, identique à l'image de construction Docker.
 - `npm run dev` écoute sur `http://localhost:8080`, car le port est fixé dans
   `package.json`.
+- `.claude/launch.json` lance le serveur via `zsh`, initialise NVM et sélectionne
+  une version Node.js 22 avant d’appeler `npm run dev`.
 - Le README généré mentionne encore le port 3000 : cette indication est obsolète.
 - Aucun framework de tests fonctionnels ou unitaires n’est configuré ; la CI couvre
   actuellement le lint, les types, les builds Next.js/Docker et un smoke test HTTP.
@@ -94,12 +96,12 @@ Notes :
 
 Le modèle attendu est documenté dans `.env.local.example`.
 
-| Variable | Obligatoire | Utilisation |
-|---|---:|---|
-| `LLAMACPP_BASE_URL` | en pratique oui | API compatible OpenAI ; fallback `http://localhost:8080/v1` |
-| `LLAMACPP_MODEL` | non | identifiant du modèle ; fallback `local-model` |
-| `LLAMACPP_API_KEY` | selon le serveur | lu par l’application, mais absent du fichier exemple |
-| `APP_REVISION` | non | SHA Git exposé par `/api/health` ; `unknown` hors build Docker versionné |
+| Variable            |      Obligatoire | Utilisation                                                              |
+| ------------------- | ---------------: | ------------------------------------------------------------------------ |
+| `LLAMACPP_BASE_URL` |  en pratique oui | API compatible OpenAI ; fallback `http://localhost:8080/v1`              |
+| `LLAMACPP_MODEL`    |              non | identifiant du modèle ; fallback `local-model`                           |
+| `LLAMACPP_API_KEY`  | selon le serveur | lu par l’application, mais absent du fichier exemple                     |
+| `APP_REVISION`      |              non | SHA Git exposé par `/api/health` ; `unknown` hors build Docker versionné |
 
 Attention au conflit de ports : le serveur Next.js de développement occupe le port
 8080, également utilisé par le fallback de `LLAMACPP_BASE_URL`. Il faut presque
@@ -144,7 +146,8 @@ longue durée n'est stocké dans le dépôt. L'image cible est
 flowchart TD
     Browser[Navigateur]
     Home["GET / — app/page.tsx"]
-    Blog["GET /blog/[slug]"]
+    BlogIndex["GET /blog"]
+    Article["GET /blog/[slug]"]
     ChatUI["About / useChat"]
     ChatAPI["POST /api/chat"]
     Health["GET /api/health"]
@@ -154,10 +157,12 @@ flowchart TD
     Registry["components/blog/articles/index.tsx"]
 
     Browser --> Home
-    Browser --> Blog
+    Browser --> BlogIndex
+    Browser --> Article
     Home --> Data
-    Blog --> Data
-    Blog --> Registry
+    BlogIndex --> Data
+    Article --> Data
+    Article --> Registry
     Home --> ChatUI
     ChatUI -. désactivé temporairement .-> ChatAPI
     ChatAPI -. réponse 503 .-> ChatUI
@@ -174,13 +179,14 @@ portant `"use client"` gèrent les interactions, les animations ou le chat.
 ├── app/
 │   ├── layout.tsx                 # HTML racine, polices et métadonnées globales
 │   ├── page.tsx                   # Composition et ordre des sections
-│   ├── globals.css                # Tailwind, thème et animations
+│   ├── globals.css                # Tailwind, thème, défilement et animations
 │   ├── api/chat/route.ts          # POST de streaming vers le modèle
 │   ├── api/health/route.ts        # état du conteneur et révision déployée
+│   ├── blog/page.tsx              # Index statique des articles
 │   └── blog/[slug]/page.tsx       # Page statique dynamique d’un article
 ├── components/
-│   ├── portfolio/                 # Sections et interactions de l’accueil
-│   ├── blog/                      # Coquille et blocs des articles
+│   ├── portfolio/                 # Sections, Hero et interactions de l’accueil
+│   ├── blog/                      # Index, navigation et blocs des articles
 │   │   └── articles/              # Contenu TSX et registre slug -> composant
 │   └── ui/                        # Primitives génériques Base UI/shadcn
 ├── lib/
@@ -188,7 +194,8 @@ portant `"use client"` gèrent les interactions, les animations ou le chat.
 │   ├── system-prompt.ts           # Prompt généré depuis les données
 │   └── utils.ts                   # cn() = clsx + tailwind-merge
 ├── public/
-│   └── images/hero.webp           # Seule image métier finale utilisée
+│   └── images/                    # Portrait et fond décoratif de l’accueil
+├── .claude/launch.json            # lancement local avec NVM et Node.js 22
 ├── Dockerfile                     # image Next.js standalone multi-stage
 ├── .dockerignore                  # exclut secrets, dépendances et artefacts locaux
 ├── .nvmrc                         # Node.js 22.23.1
@@ -215,9 +222,9 @@ ne sont pas importés.
 1. `Navbar`
 2. `Hero`
 3. `About`
-4. `Skills`
-5. `Experience`
-6. `Projects`
+4. `Projects`
+5. `Skills`
+6. `Experience`
 7. `Education`
 8. `Contact`
 9. `Footer`
@@ -225,10 +232,16 @@ ne sont pas importés.
 Le tout est enveloppé dans `AboutTabProvider`, qui partage l’onglet actif de la section
 À propos entre `About` et `Projects`.
 
-Ancres actives : `hero`, `about`, `skills`, `experience`, `projects`, `education`,
-`contact`. Le composant `Blog` existe, mais il n’est actuellement pas monté dans
-`app/page.tsx`. `navItems` dans `lib/data.ts` doit rester synchronisé avec les ancres
-actives.
+Ancres actives : `hero`, `about`, `projects`, `skills`, `experience`, `education`,
+`contact`. L’entrée Blog de `navItems` pointe vers la route autonome `/blog` ; les
+autres entrées doivent rester synchronisées avec les identifiants portés par les
+éléments `<section>`.
+
+### `GET /blog`
+
+`app/blog/page.tsx` affiche un article à la une puis la grille des autres entrées de
+`blogPosts`. La page réutilise la navbar du portfolio, ajoute une sous-navigation
+sticky avec `BlogSubnav`, puis affiche `ArticleFooter`.
 
 ### `GET /blog/[slug]`
 
@@ -237,11 +250,8 @@ actives.
 - pré-génère les slugs de `blogPosts` avec `generateStaticParams()` ;
 - produit les métadonnées depuis l’entrée correspondante ;
 - exige que le même slug existe aussi dans `articleRegistry` ;
-- renvoie `notFound()` si les métadonnées ou le composant manquent.
-
-Il n’y a pas de route `/blog` autonome. Le composant de liste existe mais est
-actuellement désactivé sur `/` ; les articles restent accessibles directement par
-leur slug.
+- renvoie `notFound()` si les métadonnées ou le composant manquent ;
+- réutilise `Navbar` et `BlogSubnav` pour revenir à l’index ou à l’accueil.
 
 ### `POST /api/chat`
 
@@ -264,26 +274,26 @@ argument lors du build Docker, ou vaut `unknown` en développement local.
 
 ### `components/portfolio/`
 
-| Fichier | Responsabilité | État / dépendances |
-|---|---|---|
-| `navbar.tsx` | navigation desktop/mobile et scroll fluide | client ; `navItems`, `Sheet` |
-| `hero.tsx` | introduction, rôle animé, portrait avec tilt et CTA | client ; Motion, `roles`, `hero.webp` |
-| `about.tsx` | onglets Profil/Chat et interface du chat | client ; état de maintenance temporaire |
-| `ui-context.tsx` | état partagé `aboutTab` | client |
-| `skills.tsx` | grilles de compétences | `skillGroups` |
-| `experience.tsx` | chronologie professionnelle | `experiences` |
-| `projects.tsx` | filtres IA/Web et cartes projet | client ; contexte partagé |
-| `education.tsx` | cartes de formation | `education` |
-| `blog.tsx` | cartes vers les articles | `blogPosts` |
-| `contact.tsx` | formulaire contrôlé | client ; simulation uniquement |
-| `footer.tsx` | ancres, liens sociaux et copyright | `navItems` |
-| `reveal.tsx` | animation via `IntersectionObserver` | client |
-| `image-placeholder.tsx` | visuel temporaire | Lucide |
-| `social-icons.tsx` | SVG GitHub, LinkedIn et email | autonome |
+| Fichier                 | Responsabilité                                                  | État / dépendances                                           |
+| ----------------------- | --------------------------------------------------------------- | ------------------------------------------------------------ |
+| `navbar.tsx`            | navigation desktop/mobile vers les sections                     | client ; `navItems`, `SectionLink`, état du menu mobile      |
+| `section-link.tsx`      | scroll Motion vers les sections sans fragment d’URL             | client ; Motion, Router Next.js, cible temporaire en session |
+| `hero/hero.tsx`         | introduction, rôle animé, portrait avec tilt et CTA             | client ; Motion, `roles`, `hero.webp`                        |
+| `about.tsx`             | onglets Profil/Chat et interface du chat                        | client ; état de maintenance temporaire                      |
+| `ui-context.tsx`        | état partagé `aboutTab`                                         | client                                                       |
+| `skills.tsx`            | grilles de compétences                                          | `skillGroups`                                                |
+| `experience.tsx`        | chronologie professionnelle avec fade-up progressif des entrées | `experiences`, `SectionReveal`                               |
+| `projects.tsx`          | filtres IA/Web et cartes projet                                 | client ; contexte partagé                                    |
+| `education.tsx`         | cartes de formation                                             | `education`                                                  |
+| `contact.tsx`           | formulaire contrôlé                                             | client ; simulation uniquement                               |
+| `footer.tsx`            | ancres, liens sociaux et copyright                              | `navItems`                                                   |
+| `image-placeholder.tsx` | visuel temporaire                                               | Lucide                                                       |
+| `social-icons.tsx`      | SVG GitHub, LinkedIn et email                                   | autonome                                                     |
 
 ### `components/blog/`
 
-- `article-nav.tsx` : retour à l’accueil ;
+- `blog-card.tsx` : carte réutilisable de l’index ;
+- `blog-subnav.tsx` : sous-navigation sticky de l’index et des articles ;
 - `article-header.tsx` : tag, date, auteur et rôle ;
 - `article-callout.tsx` : encart éditorial ;
 - `article-code-block.tsx` : bloc de code stylisé ;
@@ -291,12 +301,15 @@ argument lors du build Docker, ou vaut `unknown` en développement local.
 - `article-cta.tsx` : liens vers le chat et le contact ;
 - `article-footer.tsx` : pied de page minimal ;
 - `articles/index.tsx` : registre obligatoire des composants d’articles ;
-- `articles/rag-auto-heberge.tsx` : seul article complet actuel.
+- `articles/*.tsx` : trois articles complets, enregistrés explicitement par slug et
+  découpés en blocs éditoriaux animés par `SectionReveal`.
 
 ### `components/ui/`
 
-`button.tsx`, `input.tsx`, `textarea.tsx` et `sheet.tsx` sont des primitives génériques.
-Elles suivent le style shadcn/Base UI. Ne pas y placer de contenu métier.
+`button.tsx`, `input.tsx`, `textarea.tsx` et `sheet.tsx` sont des primitives génériques
+shadcn/Base UI. `section-reveal.tsx` centralise le fade-up Motion partagé par le
+portfolio, l’index du blog et les blocs des articles. Ne pas placer de contenu métier
+dans ce dossier.
 
 ## 10. Sources de données
 
@@ -329,14 +342,22 @@ dans la route et le composant.
 
 ### Navigation et état partagé
 
-- Chaque ancre de section utilise un marqueur invisible, sans dimension et placé à la
-  position finale du titre, hors du conteneur animé. Les ancres natives et les appels
-  à `scrollIntoView` partagent un offset global de 116 px, afin de placer chaque titre
-  30 px sous la navbar sticky de 86 px.
-- Le menu mobile est un `Sheet` contrôlé par l’état `open`.
+- Chaque composant de section porte directement son identifiant d’ancre sur son
+  élément `<section>`.
+- `SectionLink` intercepte les liens de section sur l’accueil et anime la position
+  avec Motion, selon une durée adaptée à la distance et une courbe ease-in-out. Les
+  identifiants de section ne sont jamais ajoutés à l’URL.
+- Depuis `/blog` ou un article, `SectionLink` conserve temporairement l’identifiant
+  ciblé dans `sessionStorage`, navigue vers `/`, puis positionne la page sans
+  animation. Le blog et ses articles n’ont donc aucune animation de scroll.
+- `app/globals.css` conserve `scroll-behavior: auto` et un `scroll-padding-top` de
+  `20px`. Les mouvements réduits désactivent également l’animation Motion.
+- Le menu mobile est un panneau déroulant simple contrôlé par l’état `open`. Il
+  n’utilise pas de dialogue modal et ne verrouille pas le défilement de la page.
 - La Démo du premier projet sélectionne l’onglet Chat via `AboutTabProvider`, puis
-  défile vers `#about`.
-- Les autres navigations internes utilisent des ancres.
+  utilise `SectionLink` vers la section À propos.
+- Les autres navigations internes vers une section utilisent `SectionLink`, sauf les
+  liens externes et les placeholders sans destination réelle.
 
 ### Contact
 
@@ -349,7 +370,16 @@ et affiche un succès. Aucun `fetch`, email, stockage ou endpoint n’est appel�
 - Polices Inter et JetBrains Mono via `next/font`.
 - Palette Zinc, Cyan, Teal et Amber.
 - Conteneur habituel : `max-w-6xl` avec `px-8`.
-- Sections séparées par `border-zinc-900` et animées par `Reveal`.
+- Sections séparées par `border-zinc-900`. Leur contenu complet, Hero inclus, est
+  enveloppé par `SectionReveal` pour un fade-up Motion joué une seule fois à l’entrée
+  dans le viewport et neutralisé lorsque les mouvements réduits sont demandés. Les
+  entrées de la chronologie Expérience réutilisent ce wrapper avec un léger délai
+  progressif.
+- L’index du blog révèle séparément son introduction, l’article à la une et chaque
+  carte. Les articles révèlent leur en-tête, leur couverture, leurs grandes sections,
+  leurs tags et leur CTA afin qu’aucun wrapper animé ne couvre un contenu trop haut.
+- Le défilement Motion est réservé à l’accueil ; le blog et ses articles conservent
+  leurs éventuels reveals mais utilisent un défilement instantané.
 - Tailwind CSS 4 et tokens shadcn dans `app/globals.css`.
 - Alias TypeScript `@/*` vers la racine.
 - Contenu et interface en français.
@@ -361,8 +391,8 @@ et affiche un succès. Aucun `fetch`, email, stockage ou endpoint n’est appel�
 ### Modifier une information du portfolio
 
 Commencer par `lib/data.ts`, puis vérifier son impact dans `lib/system-prompt.ts`.
-Les coordonnées email et certains textes du Hero sont encore écrits directement dans
-les composants.
+Les liens sociaux et certains textes du Hero sont encore écrits directement dans les
+composants.
 
 ### Ajouter une section à l’accueil
 
@@ -379,7 +409,7 @@ les composants.
 2. Créer le contenu dans `components/blog/articles/`.
 3. L’importer dans `components/blog/articles/index.tsx`.
 4. Enregistrer exactement le même slug dans `articleRegistry`.
-5. Vérifier `/`, `/blog/<slug>`, les métadonnées et `npm run build`.
+5. Vérifier `/blog`, `/blog/<slug>`, les métadonnées et `npm run build`.
 
 Il n’existe ni MDX ni découverte automatique : oublier le registre rend l’article
 introuvable.
@@ -402,11 +432,10 @@ Ajouter l’asset optimisé dans `public/images/`, puis remplacer `ImagePlacehol
 
 ## 14. Inachèvements et risques connus
 
-- GitHub, LinkedIn, CV, « Voir l’architecture » et certains liens projet : `href="#"`.
-- Email : `alex.commeau@example.com`, donc adresse placeholder.
+- CV, « Voir l’architecture » et certains liens projet : `href="#"`.
 - Formulaire de contact : faux succès, aucune transmission.
 - Images de projets, blog, auteur et schéma : `ImagePlaceholder`.
-- Description du premier projet : contient encore du Lorem ipsum.
+- Plusieurs projets utilisent encore un titre ou une description « à venir ».
 - Badge « Disponible » et état du serveur GPU : codés en dur.
 - Le système est présenté comme RAG, mais le backend est un prompt statique enrichi.
 - `.env.local.example` omet `LLAMACPP_API_KEY`, pourtant l’application la lit.
@@ -443,14 +472,17 @@ npm run build
 ```
 
 Pour une modification visuelle, inspecter `/` en mobile et desktop, le menu mobile,
-les filtres projets, le passage Projet → Chat, les onglets Profil/Chat et
-`/blog/rag-auto-heberge`.
+les filtres projets, le passage Projet → Chat, les onglets Profil/Chat, `/blog` et un
+article comme `/blog/rag-auto-heberge`.
 
 Pour tester réellement le chat, un serveur compatible OpenAI accessible via
 `LLAMACPP_BASE_URL` est requis.
 
-Dernier contrôle, le 31 juillet 2026 avec Node.js `22.18.0` :
+Dernier contrôle, le 4 août 2026 avec Node.js `22.23.1` :
 
 - `npm run lint` : réussi ;
-- `npx tsc --noEmit` : réussi ;
-- `npm run build` : réussi.
+- `npm run typecheck` : réussi ;
+- `npm run build` : réussi ;
+- `git diff --check` : réussi ;
+- contrôles visuels et comportementaux des ancres et du fade-up laissés à
+  l’utilisateur, sans test navigateur effectué par Codex.

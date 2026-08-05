@@ -1,13 +1,13 @@
-import { Reveal } from "@/components/portfolio/reveal";
 import { education } from "@/lib/data";
+import { SectionReveal } from "@/components/ui/section-reveal";
 
 export function Education() {
   return (
     <section
+      id="education"
       className="relative border-t border-zinc-900 bg-white/[1.5%]"
     >
-      <span id="education" aria-hidden="true" className="pointer-events-none absolute top-24" />
-      <Reveal className="mx-auto max-w-6xl px-8 py-24">
+      <SectionReveal className="mx-auto max-w-6xl px-8 py-24">
         <div className="mb-11 text-center">
           <h2 className="mb-3 text-4xl font-extrabold tracking-tight">
             <span className="bg-gradient-to-r from-cyan-400 via-teal-400 to-amber-400 bg-clip-text text-transparent">
@@ -67,7 +67,7 @@ export function Education() {
             </div>
           ))}
         </div>
-      </Reveal>
+      </SectionReveal>
     </section>
   );
 }

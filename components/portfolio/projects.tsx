@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Reveal } from "@/components/portfolio/reveal";
 import { ImagePlaceholder } from "@/components/portfolio/image-placeholder";
+import { SectionReveal } from "@/components/ui/section-reveal";
+import { SectionLink } from "@/components/portfolio/section-link";
 import { useAboutTabContext } from "@/components/portfolio/ui-context";
 import { filters, projectsData, type ProjectFilter } from "@/lib/data";
 import { cn } from "@/lib/utils";
@@ -16,16 +17,13 @@ export function Projects() {
       ? projectsData
       : projectsData.filter((p) => p.category === filter);
 
-  const goToIaChat = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const goToIaChat = () => {
     setAboutTab("chat");
-    document.getElementById("about")?.scrollIntoView({ block: "start" });
   };
 
   return (
-    <section className="relative border-t border-zinc-900">
-      <span id="projects" aria-hidden="true" className="pointer-events-none absolute top-24" />
-      <Reveal className="mx-auto max-w-6xl px-8 py-24">
+    <section id="projects" className="relative border-t border-zinc-900">
+      <SectionReveal className="mx-auto max-w-6xl px-8 py-24">
         <div className="mb-9 text-center">
           <h2 className="mb-3 text-4xl font-extrabold tracking-tight">
             <span className="bg-gradient-to-r from-cyan-400 via-teal-400 to-amber-400 bg-clip-text text-transparent">
@@ -114,24 +112,30 @@ export function Projects() {
                         </svg>
                       </a>
                     )}
-                    <a
-                      href={isFirst ? "#chat-demo" : "#"}
-                      onClick={
-                        isFirst
-                          ? goToIaChat
-                          : (event) => event.preventDefault()
-                      }
-                      className="inline-flex items-center gap-1.5 rounded-md bg-cyan-400 px-4 py-2.25 text-[13.5px] font-semibold text-[#052027] transition-colors hover:bg-amber-400"
-                    >
-                      Démo
-                    </a>
+                    {isFirst ? (
+                      <SectionLink
+                        sectionId="about"
+                        onClick={goToIaChat}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-cyan-400 px-4 py-2.25 text-[13.5px] font-semibold text-[#052027] transition-colors hover:bg-amber-400"
+                      >
+                        Démo
+                      </SectionLink>
+                    ) : (
+                      <a
+                        href="#"
+                        onClick={(event) => event.preventDefault()}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-cyan-400 px-4 py-2.25 text-[13.5px] font-semibold text-[#052027] transition-colors hover:bg-amber-400"
+                      >
+                        Démo
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
             );
           })}
         </div>
-      </Reveal>
+      </SectionReveal>
     </section>
   );
 }
