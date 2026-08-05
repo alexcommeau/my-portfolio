@@ -126,14 +126,8 @@
   }
   html {
     @apply font-sans;
-    scroll-behavior: smooth;
-    scroll-padding-top: 116px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
     scroll-behavior: auto;
+    scroll-padding-top: 20px;
   }
 }
 

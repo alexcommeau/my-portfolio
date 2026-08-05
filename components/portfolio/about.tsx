@@ -1,7 +1,7 @@
 "use client";
 
-import { Reveal } from "@/components/portfolio/reveal";
 import { useAboutTabContext } from "@/components/portfolio/ui-context";
+import { SectionReveal } from "@/components/ui/section-reveal";
 import { aboutCards, bio } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
@@ -64,10 +64,10 @@ export function About() {
 
   return (
     <section
+      id="about"
       className="relative border-t border-zinc-900 bg-white/[1.5%]"
     >
-      <span id="about" aria-hidden="true" className="pointer-events-none absolute top-24" />
-      <Reveal className="mx-auto max-w-6xl px-8 py-24">
+      <SectionReveal className="mx-auto max-w-6xl px-8 py-24">
         <div className="mb-8 text-center">
           <h2 className="mb-3 text-4xl font-extrabold tracking-tight">
             À propos{" "}
@@ -76,7 +76,8 @@ export function About() {
             </span>
           </h2>
           <p className="mb-7 text-[15.5px] text-zinc-400">
-            Construire des produits fiables, à la croisée du fullstack et de l&apos;IA
+            Découvrez mon parcours et mes compétences, ou échangez avec mon assistant
+            IA pour en savoir plus sur mon profil.
           </p>
           <div className="inline-flex gap-1 rounded-lg border border-zinc-800 bg-zinc-900 p-1">
             <button
@@ -105,19 +106,19 @@ export function About() {
         </div>
 
         {aboutTab === "profile" && (
-          <div className="grid min-h-[460px] grid-cols-1 gap-5 md:grid-cols-[1.1fr_1fr]">
-            <div className="rounded-[10px] border border-zinc-800 bg-zinc-900 p-8">
-              <h3 className="mb-4 text-xl font-bold text-cyan-400">Parcours</h3>
+          <div className="grid min-h-[550px] grid-cols-1 gap-5 md:grid-cols-[1.1fr_1fr]">
+            <div className="rounded-[10px] border border-zinc-800 bg-zinc-900 p-8 pb-10">
+              <h3 className="mb-6 text-xl font-bold text-cyan-400">Qui suis-je ?</h3>
               {bio.map((paragraph, i) => (
                 <p
                   key={paragraph}
-                  className={cn("text-[15px] leading-loose text-zinc-400", i > 0 && "mt-4")}
+                  className={cn("text-[15px] leading-[1.85] text-zinc-400", i > 0 && "mt-5")}
                 >
                   {paragraph}
                 </p>
               ))}
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:self-start">
               {aboutCards.map((card) => (
                 <div
                   key={card.title}
@@ -126,8 +127,8 @@ export function About() {
                   <div className="mb-3 flex size-9.5 items-center justify-center rounded-lg border border-cyan-400/20 bg-cyan-400/10 font-mono text-[15px] font-bold text-cyan-400">
                     {card.glyph}
                   </div>
-                  <div className="mb-1.5 text-[15px] font-bold">{card.title}</div>
-                  <div className="text-[13px] leading-snug text-zinc-500">
+                  <div className="mb-1.5 text-[16px] font-bold">{card.title}</div>
+                  <div className="text-[15px] leading-relaxed text-zinc-400">
                     {card.desc}
                   </div>
                 </div>
@@ -223,7 +224,7 @@ export function About() {
             </div>
           </div>
         )}
-      </Reveal>
+      </SectionReveal>
     </section>
   );
 }

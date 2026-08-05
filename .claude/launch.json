@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "portfolio-dev",
+      "runtimeExecutable": "zsh",
+      "runtimeArgs": [
+        "-lc",
+        "source ~/.nvm/nvm.sh && nvm use --silent 22 && npm run dev"
+      ],
+      "port": 8080
+    }
+  ]
+}
