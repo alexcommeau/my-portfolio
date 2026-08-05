@@ -43,3 +43,6 @@ next-env.d.ts
 
 # claude code (config personnelle, propre à chaque machine)
 .claude/settings.local.json
+
+# notes privées locales : améliorations futures et sujets de sécurité
+/.private/
