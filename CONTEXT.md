@@ -23,7 +23,9 @@ ni CMS. Le contenu métier est principalement codé dans `lib/data.ts`.
 
 - le chat est visible dans la section À propos, mais temporairement désactivé : son
   interface est en lecture seule et `POST /api/chat` répond `503` pendant la maintenance ;
-- le formulaire de contact est simulé côté navigateur et n’envoie rien ;
+- le formulaire de contact poste vers `POST /api/contact`, qui valide la saisie avec
+  zod puis relaie le message par l’API HTTP Resend ; il répond `503` tant que
+  `RESEND_API_KEY` est absente ;
 - plusieurs liens, images et contenus de projets sont encore des placeholders ;
 - l’interface parle de « RAG », mais aucune recherche documentaire/vectorielle
   n’existe dans ce dépôt : les données de `lib/data.ts` sont injectées dans un prompt.
@@ -102,6 +104,13 @@ Le modèle attendu est documenté dans `.env.local.example`.
 | `LLAMACPP_MODEL`    |              non | identifiant du modèle ; fallback `local-model`                           |
 | `LLAMACPP_API_KEY`  | selon le serveur | lu par l’application, mais absent du fichier exemple                     |
 | `APP_REVISION`      |              non | SHA Git exposé par `/api/health` ; `unknown` hors build Docker versionné |
+| `RESEND_API_KEY`    | pour l’envoi oui | clé API Resend ; sans elle `POST /api/contact` répond `503`              |
+| `CONTACT_TO_EMAIL`  |              non | destinataire du formulaire ; fallback `alexcommeau@gmail.com`           |
+
+`RESEND_API_KEY` et `CONTACT_TO_EMAIL` sont lues **dans le handler** de
+`app/api/contact/route.ts`, jamais au chargement du module : la CI exécute
+`next build` sans aucun secret. `.dockerignore` excluant `.env*`, la clé doit être
+injectée au runtime (`docker run -e RESEND_API_KEY=…`) et jamais au build.
 
 Attention au conflit de ports : le serveur Next.js de développement occupe le port
 8080, également utilisé par le fallback de `LLAMACPP_BASE_URL`. Il faut presque
@@ -150,6 +159,9 @@ flowchart TD
     Article["GET /blog/[slug]"]
     ChatUI["About / useChat"]
     ChatAPI["POST /api/chat"]
+    ContactUI["Contact / formulaire"]
+    ContactAPI["POST /api/contact"]
+    Resend["API Resend"]
     Health["GET /api/health"]
     Prompt["lib/system-prompt.ts"]
     Data["lib/data.ts"]
@@ -166,6 +178,9 @@ flowchart TD
     Home --> ChatUI
     ChatUI -. désactivé temporairement .-> ChatAPI
     ChatAPI -. réponse 503 .-> ChatUI
+    Home --> ContactUI
+    ContactUI --> ContactAPI
+    ContactAPI --> Resend
     Health --> Revision["APP_REVISION"]
 ```
 
@@ -181,6 +196,7 @@ portant `"use client"` gèrent les interactions, les animations ou le chat.
 │   ├── page.tsx                   # Composition et ordre des sections
 │   ├── globals.css                # Tailwind, thème, défilement et animations
 │   ├── api/chat/route.ts          # POST de streaming vers le modèle
+│   ├── api/contact/route.ts       # POST validé, anti-spam et relais Resend
 │   ├── api/health/route.ts        # état du conteneur et révision déployée
 │   ├── blog/page.tsx              # Index statique des articles
 │   └── blog/[slug]/page.tsx       # Page statique dynamique d’un article
@@ -191,6 +207,7 @@ portant `"use client"` gèrent les interactions, les animations ou le chat.
 │   └── ui/                        # Primitives génériques Base UI/shadcn
 ├── lib/
 │   ├── data.ts                    # Source centrale du contenu
+│   ├── contact-schema.ts          # Schéma zod partagé client/serveur du contact
 │   ├── system-prompt.ts           # Prompt généré depuis les données
 │   └── utils.ts                   # cn() = clsx + tailwind-merge
 ├── public/
@@ -264,6 +281,35 @@ et de l'interface active sont gardés en commentaires dans les fichiers concern�
 
 La route reste publique, sans authentification, quota ou rate limiting.
 
+### `POST /api/contact`
+
+Reçoit le corps JSON `{ name, email, subject, message, company }` produit par le
+formulaire. Le handler enchaîne, dans cet ordre : limitation par IP, lecture du corps,
+piège honeypot, validation zod, lecture de la clé API, appel Resend.
+
+| Code  | Corps                                                        | Cas                                    |
+| ----- | ------------------------------------------------------------ | -------------------------------------- |
+| `200` | `{ ok: true }`                                               | envoi réussi, ou honeypot rempli       |
+| `400` | `{ ok: false, error, fieldErrors? }`                         | JSON illisible ou validation échouée   |
+| `429` | `{ ok: false, error }` + `Retry-After`                       | quota IP dépassé                       |
+| `502` | `{ ok: false, error }`                                       | Resend en échec, timeout ou réseau     |
+| `503` | `{ ok: false, error }`                                       | `RESEND_API_KEY` absente               |
+
+Détails importants :
+
+- le schéma zod vit dans `lib/contact-schema.ts` et sert **aussi** au client, qui
+  pré-valide avant tout appel réseau ; les messages d’erreur sont en français ;
+- le champ `company` est un honeypot : rempli, la route renvoie `200` sans rien
+  envoyer, pour que le bot n’apprenne pas le piège ;
+- limitation : 5 requêtes par tranche de 10 minutes et par IP, sur une fenêtre
+  glissante conservée dans une `Map` en mémoire, l’IP étant lue dans
+  `x-forwarded-for` puis `x-real-ip` ;
+- l’email part en texte brut, avec `from` fixé au domaine bac à sable Resend,
+  `reply_to` sur l’adresse du visiteur et un sujet préfixé `[Portfolio] ` qui sert de
+  critère au filtre Gmail ;
+- toutes les réponses portent `Cache-Control: no-store` ; le détail des erreurs Resend
+  reste dans les logs serveur et n’est jamais renvoyé au client.
+
 ### `GET /api/health`
 
 La route renvoie un JSON `{ status: "ok", revision }` avec HTTP 200 et l'en-tête
@@ -285,7 +331,7 @@ argument lors du build Docker, ou vaut `unknown` en développement local.
 | `experience.tsx`        | chronologie professionnelle avec fade-up progressif des entrées | `experiences`, `SectionReveal`                               |
 | `projects.tsx`          | filtres IA/Web et cartes projet                                 | client ; contexte partagé                                    |
 | `education.tsx`         | cartes de formation                                             | `education`                                                  |
-| `contact.tsx`           | formulaire contrôlé                                             | client ; simulation uniquement                               |
+| `contact.tsx`           | formulaire contrôlé, validé et envoyé                           | client ; `contactSchema`, `POST /api/contact`                |
 | `footer.tsx`            | ancres, liens sociaux et copyright                              | `navItems`                                                   |
 | `image-placeholder.tsx` | visuel temporaire                                               | Lucide                                                       |
 | `social-icons.tsx`      | SVG GitHub, LinkedIn et email                                   | autonome                                                     |
@@ -361,8 +407,21 @@ dans la route et le composant.
 
 ### Contact
 
-`Contact` conserve quatre champs dans `useState`. À la soumission, il vide les champs
-et affiche un succès. Aucun `fetch`, email, stockage ou endpoint n’est appelé.
+`Contact` pilote une machine à quatre états : `idle`, `submitting`, `success` et
+`error`. À la soumission, le composant valide d’abord la saisie avec `contactSchema`
+— aucun appel réseau si elle est incomplète — puis poste vers `POST /api/contact`.
+
+- les erreurs par champ s’affichent sous le contrôle concerné et activent les styles
+  `aria-invalid` déjà portés par `Input` et `Textarea`, avec `aria-describedby` vers le
+  message ; l’erreur d’un champ disparaît dès qu’il est corrigé ;
+- le formulaire porte `noValidate` : les messages français du schéma remplacent les
+  bulles natives du navigateur, qui suivent la langue du système ;
+- en cas d’échec, les valeurs saisies sont conservées ; elles ne sont vidées qu’au
+  succès, suivi d’un bouton « Envoyer un autre message » qui repasse en `idle` ;
+- le bouton est désactivé pendant l’envoi et affiche « Envoi en cours… » ;
+- le honeypot `company` est déporté hors écran plutôt que masqué en `display:none`,
+  avec `aria-hidden`, `tabIndex={-1}` et `autoComplete="off"` pour rester invisible aux
+  lecteurs d’écran, au clavier et aux gestionnaires de mots de passe.
 
 ## 12. Styles et conventions
 
@@ -425,15 +484,38 @@ Considérer ensemble :
 Un vrai RAG nécessitera de nouvelles briques d’ingestion, stockage, recherche et
 citation ; elles n’existent pas encore.
 
+### Modifier le formulaire de contact
+
+Considérer ensemble :
+
+- règles de saisie et messages : `lib/contact-schema.ts`, partagé client/serveur ;
+- transport, anti-spam et destinataire : `app/api/contact/route.ts` ;
+- interface et états : `components/portfolio/contact.tsx`.
+
+Toute nouvelle variable d’environnement doit être ajoutée à `.env.local.example` et au
+tableau de la section 4, et rester lue à l’intérieur du handler.
+
 ### Remplacer une image temporaire
 
 Ajouter l’asset optimisé dans `public/images/`, puis remplacer `ImagePlaceholder` par
 `next/image` avec dimensions, `alt` descriptif et `sizes` responsive.
 
+### Notes privées d’amélioration
+
+Les améliorations futures et sujets de sécurité à traiter sont suivis localement dans
+`.private/FUTURE_IMPROVEMENTS.md`. Le dossier est ignoré par Git et exclu du contexte
+Docker : son contenu ne doit jamais être commité, publié ou utilisé pour stocker des
+secrets. Cette liste est un aide-mémoire local, pas un mécanisme de sécurité.
+
 ## 14. Inachèvements et risques connus
 
 - CV, « Voir l’architecture » et certains liens projet : `href="#"`.
-- Formulaire de contact : faux succès, aucune transmission.
+- Formulaire de contact : la limitation par IP vit en mémoire, donc elle repart de zéro
+  à chaque redémarrage du conteneur et ne tiendrait pas en multi-instance ni en runtime
+  edge. `x-forwarded-for` reste falsifiable tant qu’aucun reverse proxy de confiance ne
+  le réécrit, et sans cet en-tête toutes les requêtes partagent le même compteur. Le
+  domaine bac à sable `onboarding@resend.dev` n’autorise l’envoi qu’à l’adresse du
+  titulaire du compte Resend ; envoyer ailleurs exigera un domaine vérifié.
 - Images de projets, blog, auteur et schéma : `ImagePlaceholder`.
 - Plusieurs projets utilisent encore un titre ou une description « à venir ».
 - Badge « Disponible » et état du serveur GPU : codés en dur.
