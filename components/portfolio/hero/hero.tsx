@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { motion, useReducedMotion, useSpring } from "motion/react";
 import { SectionReveal } from "@/components/ui/section-reveal";
 import { SectionLink } from "@/components/portfolio/section-link";
 import { roles } from "@/lib/data";
@@ -11,9 +10,6 @@ import {
   LinkedinIcon,
 } from "@/components/portfolio/social-icons";
 import styles from "./hero.module.css";
-
-const MAX_TILT = 5;
-const tiltSpring = { stiffness: 180, damping: 22, mass: 0.6 };
 
 function useTypedRole() {
   const [text, setText] = useState("");
@@ -52,16 +48,6 @@ function useTypedRole() {
 function HeroPortrait() {
   const borderRef = useRef<HTMLDivElement>(null);
   const borderAnimationFrame = useRef<number | null>(null);
-  const rotateX = useSpring(0, tiltSpring);
-  const rotateY = useSpring(0, tiltSpring);
-  const shouldReduceMotion = useReducedMotion();
-
-  useEffect(() => {
-    if (shouldReduceMotion) {
-      rotateX.jump(0);
-      rotateY.jump(0);
-    }
-  }, [rotateX, rotateY, shouldReduceMotion]);
 
   useEffect(
     () => () => {
@@ -71,11 +57,6 @@ function HeroPortrait() {
     },
     [],
   );
-
-  const resetTilt = () => {
-    rotateX.set(0);
-    rotateY.set(0);
-  };
 
   const startBorderFromPointer = (
     event: React.PointerEvent<HTMLDivElement>,
@@ -110,9 +91,7 @@ function HeroPortrait() {
     });
   };
 
-  const resetPortrait = () => {
-    resetTilt();
-
+  const resetBorder = () => {
     if (borderAnimationFrame.current !== null) {
       cancelAnimationFrame(borderAnimationFrame.current);
       borderAnimationFrame.current = null;
@@ -125,32 +104,13 @@ function HeroPortrait() {
     border?.style.removeProperty("--electric-uniformity");
   };
 
-  const updateTilt = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (shouldReduceMotion || event.pointerType === "touch") return;
-
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const x = Math.max(
-      -0.5,
-      Math.min(0.5, (event.clientX - bounds.left) / bounds.width - 0.5),
-    );
-    const y = Math.max(
-      -0.5,
-      Math.min(0.5, (event.clientY - bounds.top) / bounds.height - 0.5),
-    );
-
-    rotateX.set(-y * MAX_TILT * 2);
-    rotateY.set(x * MAX_TILT * 2);
-  };
-
   return (
     <div className="w-full max-w-[340px] justify-self-center">
-      <motion.div
+      <div
         onPointerEnter={startBorderFromPointer}
-        onPointerMove={updateTilt}
-        onPointerLeave={resetPortrait}
-        onPointerCancel={resetPortrait}
-        style={{ rotateX, rotateY, transformPerspective: 1000 }}
-        className="group relative w-full will-change-transform"
+        onPointerLeave={resetBorder}
+        onPointerCancel={resetBorder}
+        className="group relative w-full"
       >
         <div
           ref={borderRef}
@@ -169,10 +129,10 @@ function HeroPortrait() {
           </div>
         </div>
         <div className="absolute right-2 -bottom-4 flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2.25 shadow-[0_4px_16px_rgba(0,0,0,0.4)] sm:-right-5">
-          <span className="size-1.75 rounded-full bg-emerald-400" />
+          <span className="size-1.75 rounded-full bg-emerald-400 motion-safe:animate-[status-glint_2.8s_ease-in-out_infinite]" />
           <span className="text-[12.5px] font-semibold">Disponible</span>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

@@ -81,6 +81,9 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* Décalage d'ancre des titres du blog : bas de la sous-nav (134px) + marge.
+     Source unique pour `<article>` et les titres via `ArticleHeading`. */
+  --article-anchor-offset: 154px;
 }
 
 .dark {
@@ -139,6 +142,22 @@
   50%,
   100% {
     opacity: 0;
+  }
+}
+
+@keyframes status-glint {
+  0%,
+  100% {
+    opacity: 0.82;
+    box-shadow: 0 0 0 0 rgb(52 211 153 / 0%);
+  }
+  45% {
+    opacity: 1;
+    box-shadow: 0 0 0 3px rgb(52 211 153 / 14%);
+  }
+  60% {
+    opacity: 0.9;
+    box-shadow: 0 0 0 1px rgb(52 211 153 / 8%);
   }
 }
 

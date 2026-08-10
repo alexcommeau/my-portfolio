@@ -1,36 +1,25 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import { CircleQuestionMark } from "lucide-react";
 import { useAboutTabContext } from "@/components/portfolio/ui-context";
+import { Input } from "@/components/ui/input";
 import { SectionReveal } from "@/components/ui/section-reveal";
-import { aboutCards, bio } from "@/lib/data";
+import {
+  CHAT_QUESTION_MAX_LENGTH,
+  chatErrorResponseSchema,
+  chatRequestSchema,
+  chatSuccessResponseSchema,
+} from "@/lib/chat-schema";
+import { aboutCards, bio, chatQA } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
-/*
- * ANCIENNE VERSION ACTIVE — à restaurer avec la route API ci-dessus.
- *
- * import { useEffect, useRef, useState } from "react";
- * import { useChat } from "@ai-sdk/react";
- * import { DefaultChatTransport } from "ai";
- * import { Input } from "@/components/ui/input";
- * import { aboutCards, bio, chatQA } from "@/lib/data";
- *
- * Dans About(), restaurer :
- * const [chatInput, setChatInput] = useState("");
- * const { messages, sendMessage, status, error } = useChat({
- *   transport: new DefaultChatTransport({ api: "/api/chat" }),
- * });
- * const chatTyping = status === "submitted";
- * const sendChatMessage = (e: React.FormEvent) => {
- *   e.preventDefault();
- *   const text = chatInput.trim();
- *   if (!text) return;
- *   sendMessage({ text });
- *   setChatInput("");
- * };
- *
- * Puis remplacer le panneau de maintenance par le rendu des messages, les
- * boutons chatQA et le formulaire Input qui appelle sendChatMessage.
- */
+type ChatMessage = {
+  id: number;
+  role: "user" | "assistant";
+  content: string;
+  answered?: boolean;
+};
 
 function GpuIcon({ className }: { className?: string }) {
   return (
@@ -42,25 +31,90 @@ function GpuIcon({ className }: { className?: string }) {
   );
 }
 
-function InfoIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="M9.5 9a2.5 2.5 0 0 1 4.6 1.4c0 1.6-2.1 1.9-2.1 3.1" />
-      <path d="M12 17.5h.01" />
-    </svg>
-  );
-}
-
 export function About() {
   const { aboutTab, setAboutTab } = useAboutTabContext();
+  const [chatInput, setChatInput] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [chatStatus, setChatStatus] = useState<"idle" | "submitting">("idle");
+  const [chatError, setChatError] = useState<string | null>(null);
+  const messageSequence = useRef(0);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatTyping = chatStatus === "submitting";
+
+  /** Maintient le dernier message visible sans gérer la conversation côté API. */
+  useEffect(() => {
+    if (aboutTab !== "chat") return;
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
+  }, [aboutTab, messages, chatStatus]);
+
+  /** Envoie une question indépendante et conserve uniquement l’historique visuel. */
+  const askQuestion = async (rawQuestion: string) => {
+    if (chatTyping) return;
+
+    const parsedQuestion = chatRequestSchema.safeParse({ question: rawQuestion });
+    if (!parsedQuestion.success) {
+      setChatError(
+        parsedQuestion.error.issues[0]?.message ??
+          "Écrivez une question entre 3 et 500 caractères.",
+      );
+      return;
+    }
+
+    const question = parsedQuestion.data.question;
+    const userMessage: ChatMessage = {
+      id: ++messageSequence.current,
+      role: "user",
+      content: question,
+    };
+
+    setMessages((current) => [...current, userMessage]);
+    setChatInput("");
+    setChatError(null);
+    setChatStatus("submitting");
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      const body: unknown = await response.json().catch(() => null);
+      const parsedResponse = chatSuccessResponseSchema.safeParse(body);
+
+      if (response.ok && parsedResponse.success) {
+        setMessages((current) => [
+          ...current,
+          {
+            id: ++messageSequence.current,
+            role: "assistant",
+            content: parsedResponse.data.answer,
+            answered: parsedResponse.data.answered,
+          },
+        ]);
+        return;
+      }
+
+      const parsedError = chatErrorResponseSchema.safeParse(body);
+      setChatError(
+        parsedError.success
+          ? parsedError.data.error
+          : "L’assistant n’a pas pu répondre. Réessayez dans un instant.",
+      );
+    } catch {
+      setChatError("Connexion impossible. Vérifiez votre réseau et réessayez.");
+    } finally {
+      setChatStatus("idle");
+    }
+  };
+
+  /** Valide le formulaire avant de transmettre sa question au même flux. */
+  const sendChatMessage = (event: React.FormEvent) => {
+    event.preventDefault();
+    void askQuestion(chatInput);
+  };
 
   return (
     <section
@@ -145,7 +199,7 @@ export function About() {
                   <span className="text-cyan-400">✦</span> Assistant IA auto-hébergé
                 </div>
                 <div className="mt-1 text-[12.5px] text-zinc-500">
-                  Temporairement indisponible
+                  Réponses construites depuis les connaissances du portfolio
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -154,7 +208,7 @@ export function About() {
                   Mode léger
                 </div>
                 <span className="group relative inline-flex text-zinc-600">
-                  <InfoIcon className="size-4" />
+                  <CircleQuestionMark className="size-4" aria-hidden="true" />
                   <span className="pointer-events-none absolute top-[calc(100%+12px)] right-[-8px] z-20 w-65 rounded-[10px] border border-zinc-800 bg-zinc-900 p-4 text-left opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.4)] transition-opacity group-hover:opacity-100">
                     <span className="mb-2.5 flex items-center gap-2 text-[13.5px] font-bold text-zinc-200">
                       <span className="text-zinc-300">✦</span> Mode léger
@@ -196,30 +250,114 @@ export function About() {
                   Questions suggérées
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <div className="rounded-lg border border-zinc-800 px-3 py-2.5 text-[13px] leading-tight text-zinc-600">
-                    Les questions suggérées seront de nouveau disponibles à la
-                    remise en service.
-                  </div>
+                  {chatQA.map(({ q }) => (
+                    <button
+                      key={q}
+                      type="button"
+                      disabled={chatTyping}
+                      onClick={() => void askQuestion(q)}
+                      className="cursor-pointer rounded-lg border border-zinc-800 px-3 py-2.5 text-left text-[13px] leading-tight text-zinc-400 transition-colors hover:border-cyan-400/30 hover:bg-cyan-400/5 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {q}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="flex min-h-[438px] flex-col px-6.5 py-6">
-                <div className="m-auto max-w-[470px] text-center">
-                  <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10 text-xl text-amber-300">
-                    i
-                  </div>
-                  <div className="mb-3 text-[19px] font-bold text-zinc-100">
-                    Assistant temporairement indisponible
-                  </div>
-                  <div className="text-sm leading-relaxed text-zinc-400">
-                    Le serveur qui fait fonctionner cet assistant est
-                    momentanément arrêté pour maintenance. Le chat reste visible,
-                    mais aucune question ne peut être envoyée pour le moment.
-                    Merci de revenir un peu plus tard.
-                  </div>
+              <div className="flex min-h-[438px] min-w-0 flex-col">
+                <div
+                  role="log"
+                  aria-live="polite"
+                  aria-label="Conversation avec l’assistant"
+                  className="max-h-[520px] min-h-0 flex-1 space-y-4 overflow-y-auto px-6.5 py-6"
+                >
+                  {messages.length === 0 ? (
+                    <div className="m-auto flex min-h-[290px] max-w-[470px] flex-col items-center justify-center text-center">
+                      <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full border border-cyan-400/30 bg-cyan-400/10 text-xl text-cyan-300">
+                        ✦
+                      </div>
+                      <div className="mb-3 text-[19px] font-bold text-zinc-100">
+                        Que souhaitez-vous savoir ?
+                      </div>
+                      <div className="text-sm leading-relaxed text-zinc-400">
+                        Posez une question sur mon parcours, mes compétences ou mes
+                        projets. Chaque question est traitée indépendamment à partir
+                        de ma base de connaissances.
+                      </div>
+                    </div>
+                  ) : (
+                    messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={cn(
+                          "flex",
+                          message.role === "user" ? "justify-end" : "justify-start",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "max-w-[88%] whitespace-pre-wrap rounded-xl px-4 py-3 text-sm leading-relaxed",
+                            message.role === "user"
+                              ? "bg-cyan-400 text-[#052027]"
+                              : message.answered === false
+                                ? "border border-amber-400/20 bg-amber-400/5 text-zinc-300"
+                                : "border border-zinc-800 bg-zinc-950 text-zinc-300",
+                          )}
+                        >
+                          {message.content}
+                        </div>
+                      </div>
+                    ))
+                  )}
+
+                  {chatTyping ? (
+                    <div className="flex justify-start" role="status">
+                      <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-500">
+                        Recherche et génération en cours…
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {chatError ? (
+                    <p
+                      role="alert"
+                      className="rounded-lg border border-red-400/20 bg-red-400/5 px-4 py-3 text-[13px] text-red-300"
+                    >
+                      {chatError}
+                    </p>
+                  ) : null}
+
+                  <div ref={messagesEndRef} />
                 </div>
-                <div className="mt-3.5 border-t border-zinc-800 pt-3.5 text-center text-[12.5px] text-zinc-600">
-                  Saisie désactivée pendant la maintenance
-                </div>
+
+                <form
+                  onSubmit={sendChatMessage}
+                  className="flex gap-2 border-t border-zinc-800 px-4 py-4 sm:px-6.5"
+                >
+                  <label htmlFor="portfolio-chat-question" className="sr-only">
+                    Votre question
+                  </label>
+                  <Input
+                    id="portfolio-chat-question"
+                    name="question"
+                    value={chatInput}
+                    onChange={(event) => {
+                      setChatInput(event.target.value);
+                      if (chatError) setChatError(null);
+                    }}
+                    maxLength={CHAT_QUESTION_MAX_LENGTH}
+                    autoComplete="off"
+                    disabled={chatTyping}
+                    placeholder="Posez votre question…"
+                    className="min-w-0 flex-1 border-zinc-800 bg-zinc-950 text-zinc-200 placeholder:text-zinc-600"
+                  />
+                  <button
+                    type="submit"
+                    disabled={chatTyping || chatInput.trim().length === 0}
+                    className="cursor-pointer rounded-md bg-cyan-400 px-4 text-[13.5px] font-bold text-[#052027] transition-colors hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-cyan-400"
+                  >
+                    Envoyer
+                  </button>
+                </form>
               </div>
             </div>
           </div>
