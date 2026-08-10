@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { PendingSectionScroll } from "@/components/portfolio/section-link";
+import { absoluteUrl, siteConfig } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({
@@ -16,9 +17,39 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alex Commeau — Développeur Fullstack & Ingénieur IA",
-  description:
-    "Portfolio d'Alex Commeau, développeur fullstack et ingénieur IA — projets, expérience et compétences.",
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: siteConfig.title,
+    template: `%s — ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  authors: [{ name: siteConfig.author.name, url: siteConfig.author.url }],
+  creator: siteConfig.author.name,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: siteConfig.locale,
+    url: "/",
+    siteName: siteConfig.name,
+    title: siteConfig.title,
+    description: siteConfig.description,
+    images: [
+      {
+        url: "/social-image",
+        width: 1200,
+        height: 630,
+        alt: `Portfolio et blog de ${siteConfig.author.name}`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.title,
+    description: siteConfig.description,
+    images: [absoluteUrl("/social-image")],
+  },
 };
 
 export default function RootLayout({

@@ -1,7 +1,7 @@
 # Cartographie du projet
 
 > Document de reprise destiné aux humains et aux agents IA. Il décrit le dépôt tel
-> qu’il a été vérifié le 4 août 2026. Le code reste la source de vérité : avant
+> qu’il a été vérifié le 10 août 2026. Le code reste la source de vérité : avant
 > toute intervention, relire `AGENTS.md`, exécuter `git status --short` et vérifier
 > les fichiers concernés.
 
@@ -11,8 +11,10 @@ Ce dépôt est le portfolio personnel d’Alex Commeau, en français, avec :
 
 - une page d’accueil mono-page présentant profil, projets, compétences, expérience,
   formation et contact ;
-- un assistant conversationnel connecté à un serveur d’inférence compatible OpenAI ;
+- un assistant conversationnel relié au backend RAG NestJS par une façade Next.js ;
 - un index de blog autonome et des articles statiques écrits en composants React/TSX ;
+- un socle SEO avec URLs canoniques, sitemap, robots, données structurées et
+  images sociales générées ;
 - un design sombre, responsive, construit avec Tailwind CSS et des primitives
   Base UI/shadcn.
 
@@ -21,14 +23,14 @@ ni CMS. Le contenu métier est principalement codé dans `lib/data.ts`.
 
 État fonctionnel important :
 
-- le chat est visible dans la section À propos, mais temporairement désactivé : son
-  interface est en lecture seule et `POST /api/chat` répond `503` pendant la maintenance ;
+- le chat de la section À propos est actif : `POST /api/chat` valide et limite les
+  requêtes, puis appelle le backend NestJS sans exposer sa clé de service ;
 - le formulaire de contact poste vers `POST /api/contact`, qui valide la saisie avec
   zod puis relaie le message par l’API HTTP Resend ; il répond `503` tant que
   `RESEND_API_KEY` est absente ;
 - plusieurs liens, images et contenus de projets sont encore des placeholders ;
-- l’interface parle de « RAG », mais aucune recherche documentaire/vectorielle
-  n’existe dans ce dépôt : les données de `lib/data.ts` sont injectées dans un prompt.
+- la recherche vectorielle et la génération vivent dans le dépôt backend
+  `my-portfolio-backend` ; ce dépôt ne contient ni connaissances ni prompt RAG.
 
 ## 2. Règle impérative avant de modifier du code
 
@@ -61,8 +63,7 @@ Toujours préserver les modifications déjà présentes dans le worktree.
 | React / React DOM       | `19.2.4`                                         |
 | TypeScript              | `^5`, mode strict                                |
 | Tailwind CSS            | `^4`, via PostCSS                                |
-| AI SDK                  | `ai ^7.0.29`, `@ai-sdk/react ^4.0.32`            |
-| Fournisseur IA          | `@ai-sdk/openai-compatible ^3.0.11`              |
+| AI SDK                  | `ai ^7.0.29`, `@ai-sdk/react ^4.0.32`, réservés au futur streaming |
 | Animations interactives | Motion `^12.43.0`                                |
 | Primitives UI           | Base UI, shadcn, Lucide React                    |
 | Gestionnaire            | npm, verrouillage par `package-lock.json`        |
@@ -98,23 +99,24 @@ Notes :
 
 Le modèle attendu est documenté dans `.env.local.example`.
 
-| Variable            |      Obligatoire | Utilisation                                                              |
-| ------------------- | ---------------: | ------------------------------------------------------------------------ |
-| `LLAMACPP_BASE_URL` |  en pratique oui | API compatible OpenAI ; fallback `http://localhost:8080/v1`              |
-| `LLAMACPP_MODEL`    |              non | identifiant du modèle ; fallback `local-model`                           |
-| `LLAMACPP_API_KEY`  | selon le serveur | lu par l’application, mais absent du fichier exemple                     |
-| `APP_REVISION`      |              non | SHA Git exposé par `/api/health` ; `unknown` hors build Docker versionné |
-| `RESEND_API_KEY`    | pour l’envoi oui | clé API Resend ; sans elle `POST /api/contact` répond `503`              |
-| `CONTACT_TO_EMAIL`  |              non | destinataire du formulaire ; fallback `alexcommeau@gmail.com`           |
+| Variable                    |      Obligatoire | Utilisation                                                              |
+| --------------------------- | ---------------: | ------------------------------------------------------------------------ |
+| `KNOWLEDGE_API_BASE_URL`    | pour le chat oui | URL privée du backend NestJS, sans suffixe `/knowledge/ask`              |
+| `KNOWLEDGE_CHAT_KEY`        | pour le chat oui | secret partagé Next.js → NestJS, jamais exposé au navigateur             |
+| `KNOWLEDGE_API_TIMEOUT_MS`  |              non | timeout du RAG ; fallback `90000`                                        |
+| `APP_REVISION`              |              non | SHA Git exposé par `/api/health` ; `unknown` hors build Docker versionné |
+| `RESEND_API_KEY`            | pour l’envoi oui | clé API Resend ; sans elle `POST /api/contact` répond `503`              |
+| `CONTACT_TO_EMAIL`          |              non | destinataire du formulaire ; fallback `alexcommeau@gmail.com`           |
 
-`RESEND_API_KEY` et `CONTACT_TO_EMAIL` sont lues **dans le handler** de
-`app/api/contact/route.ts`, jamais au chargement du module : la CI exécute
-`next build` sans aucun secret. `.dockerignore` excluant `.env*`, la clé doit être
-injectée au runtime (`docker run -e RESEND_API_KEY=…`) et jamais au build.
+Les variables de chat et de contact sont lues **dans leurs handlers**, jamais au
+chargement du module : la CI exécute `next build` sans secret. `.dockerignore`
+excluant `.env*`, elles doivent être injectées au runtime et jamais au build.
 
-Attention au conflit de ports : le serveur Next.js de développement occupe le port
-8080, également utilisé par le fallback de `LLAMACPP_BASE_URL`. Il faut presque
-toujours définir cette variable vers un autre port ou une autre machine.
+En développement, `KNOWLEDGE_API_BASE_URL=http://127.0.0.1:3001` vise NestJS sur
+le Mac. Si NestJS tourne sur le k8 derrière un tunnel
+`ssh -N -L 3002:127.0.0.1:3001 k8`, utiliser `http://127.0.0.1:3002`. En production,
+la variable doit viser le nom ou l’adresse privée joignable depuis le conteneur
+Next.js. La même `KNOWLEDGE_CHAT_KEY` doit être injectée dans les deux processus.
 
 `next.config.ts` autorise explicitement `macbook-dev.local` et l'adresse LAN
 `192.168.1.58` pour les ressources et endpoints propres au serveur de développement
@@ -157,15 +159,17 @@ flowchart TD
     Home["GET / — app/page.tsx"]
     BlogIndex["GET /blog"]
     Article["GET /blog/[slug]"]
-    ChatUI["About / useChat"]
+    Cover["GET /blog/[slug]/cover"]
+    Seo["GET /sitemap.xml et /robots.txt"]
+    ChatUI["About / historique local"]
     ChatAPI["POST /api/chat"]
+    NestChat["NestJS POST /knowledge/ask"]
+    Rag["Retrieval + génération"]
     ContactUI["Contact / formulaire"]
     ContactAPI["POST /api/contact"]
     Resend["API Resend"]
     Health["GET /api/health"]
-    Prompt["lib/system-prompt.ts"]
     Data["lib/data.ts"]
-    LLM["Serveur compatible OpenAI"]
     Registry["components/blog/articles/index.tsx"]
 
     Browser --> Home
@@ -175,9 +179,12 @@ flowchart TD
     BlogIndex --> Data
     Article --> Data
     Article --> Registry
+    Article --> Cover
+    Seo --> Data
     Home --> ChatUI
-    ChatUI -. désactivé temporairement .-> ChatAPI
-    ChatAPI -. réponse 503 .-> ChatUI
+    ChatUI --> ChatAPI
+    ChatAPI -->|"x-knowledge-chat-key"| NestChat
+    NestChat --> Rag
     Home --> ContactUI
     ContactUI --> ContactAPI
     ContactAPI --> Resend
@@ -193,22 +200,29 @@ portant `"use client"` gèrent les interactions, les animations ou le chat.
 .
 ├── app/
 │   ├── layout.tsx                 # HTML racine, polices et métadonnées globales
+│   ├── robots.ts                  # directives d'exploration et URL du sitemap
+│   ├── sitemap.ts                 # accueil, index du blog et articles
+│   ├── social-image/route.ts      # image sociale globale générée
 │   ├── page.tsx                   # Composition et ordre des sections
 │   ├── globals.css                # Tailwind, thème, défilement et animations
-│   ├── api/chat/route.ts          # POST de streaming vers le modèle
+│   ├── api/chat/route.ts          # façade JSON validée et limitée vers NestJS
 │   ├── api/contact/route.ts       # POST validé, anti-spam et relais Resend
 │   ├── api/health/route.ts        # état du conteneur et révision déployée
 │   ├── blog/page.tsx              # Index statique des articles
-│   └── blog/[slug]/page.tsx       # Page statique dynamique d’un article
+│   ├── blog/[slug]/page.tsx       # Page statique dynamique d’un article
+│   └── blog/[slug]/cover/route.ts # Couverture PNG générée par article
 ├── components/
 │   ├── portfolio/                 # Sections, Hero et interactions de l’accueil
 │   ├── blog/                      # Index, navigation et blocs des articles
 │   │   └── articles/              # Contenu TSX et registre slug -> composant
 │   └── ui/                        # Primitives génériques Base UI/shadcn
 ├── lib/
+│   ├── blog.ts                    # dates, URLs, navigation et articles associés
+│   ├── blog-cover.tsx             # rendu ImageResponse des couvertures
 │   ├── data.ts                    # Source centrale du contenu
+│   ├── site.ts                    # domaine canonique, identité, auteur et schéma Person
 │   ├── contact-schema.ts          # Schéma zod partagé client/serveur du contact
-│   ├── system-prompt.ts           # Prompt généré depuis les données
+│   ├── chat-schema.ts             # Contrats zod de la façade et du composant chat
 │   └── utils.ts                   # cn() = clsx + tailwind-merge
 ├── public/
 │   └── images/                    # Portrait et fond décoratif de l’accueil
@@ -265,21 +279,53 @@ sticky avec `BlogSubnav`, puis affiche `ArticleFooter`.
 `app/blog/[slug]/page.tsx` :
 
 - pré-génère les slugs de `blogPosts` avec `generateStaticParams()` ;
-- produit les métadonnées depuis l’entrée correspondante ;
+- produit les métadonnées canoniques, Open Graph et Twitter depuis l’entrée
+  correspondante ;
 - exige que le même slug existe aussi dans `articleRegistry` ;
 - renvoie `notFound()` si les métadonnées ou le composant manquent ;
+- embarque les JSON-LD `BlogPosting`, `Person` et `BreadcrumbList` ;
+- affiche une table des matières, une progression de lecture, l'auteur, les articles
+  plus récents/anciens et trois recommandations calculées par tags ;
 - réutilise `Navbar` et `BlogSubnav` pour revenir à l’index ou à l’accueil.
+
+### Routes SEO et images sociales
+
+- `GET /robots.txt` autorise l'exploration publique et référence
+  `https://alexcommeau.com/sitemap.xml` ;
+- `GET /sitemap.xml` contient l'accueil, `/blog` et chaque article avec sa date de
+  modification et sa couverture ;
+- `GET /social-image` génère le fallback social global en 1200×630 ;
+- `GET /blog/[slug]/cover` pré-génère une couverture 1200×630 propre à chaque
+  article. La même URL sert aux cartes, à la page article, à Open Graph, Twitter,
+  au sitemap image et au JSON-LD.
+
+Le domaine canonique est centralisé dans `lib/site.ts` et vaut
+`https://alexcommeau.com`. La configuration Cloudflare, le DNS et l'hébergement ne
+font pas partie du dépôt et ne doivent pas être modifiés dans ce flux.
 
 ### `POST /api/chat`
 
-La route est temporairement neutralisée et répond `503` avec un message de
-maintenance. L'interface du chat reste visible dans
-`components/portfolio/about.tsx`, mais ne charge plus `useChat` et désactive les
-suggestions ainsi que la saisie. La logique d'inférence, le prompt et les dépendances
-sont conservés pour la remise en service ultérieure. Les anciens extraits de la route
-et de l'interface active sont gardés en commentaires dans les fichiers concernés.
+La route est la façade publique même origine du chat. Elle accepte uniquement
+`{ question }`, normalise les espaces, refuse les champs inconnus et impose une
+longueur de 3 à 500 caractères avec `lib/chat-schema.ts`.
 
-La route reste publique, sans authentification, quota ou rate limiting.
+Elle applique une fenêtre glissante de 10 requêtes par 10 minutes et par IP, puis
+appelle `POST /knowledge/ask` sur le backend NestJS avec le header privé
+`x-knowledge-chat-key`. Le navigateur ne reçoit que `{ answer, answered }` : clé,
+modèle, scores, chunks, chemins et sources restent côté serveur.
+
+| Code  | Cas                                                               |
+| ----- | ----------------------------------------------------------------- |
+| `200` | réponse RAG valide                                                |
+| `400` | JSON, question ou champs invalides                                |
+| `429` | quota IP dépassé, avec `Retry-After`                              |
+| `502` | backend inaccessible ou contrat de réponse invalide               |
+| `503` | URL/clé absente ou backend RAG indisponible                       |
+| `504` | timeout de la chaîne retrieval + génération                       |
+
+Toutes les réponses portent `Cache-Control: no-store`. Les erreurs publiques sont
+génériques ; le détail d’infrastructure reste dans les logs serveur. La limitation
+est en mémoire et suppose que le reverse proxy de production réécrive les headers IP.
 
 ### `POST /api/contact`
 
@@ -324,8 +370,8 @@ argument lors du build Docker, ou vaut `unknown` en développement local.
 | ----------------------- | --------------------------------------------------------------- | ------------------------------------------------------------ |
 | `navbar.tsx`            | navigation desktop/mobile vers les sections                     | client ; `navItems`, `SectionLink`, état du menu mobile      |
 | `section-link.tsx`      | scroll Motion vers les sections sans fragment d’URL             | client ; Motion, Router Next.js, cible temporaire en session |
-| `hero/hero.tsx`         | introduction, rôle animé, portrait avec tilt et CTA             | client ; Motion, `roles`, `hero.webp`                        |
-| `about.tsx`             | onglets Profil/Chat et interface du chat                        | client ; état de maintenance temporaire                      |
+| `hero/hero.tsx`         | introduction, rôle animé, portrait avec bordure interactive et CTA | client ; Motion, `roles`, `hero.webp`                      |
+| `about.tsx`             | onglets Profil/Chat et interface du chat                        | client ; historique visuel, requêtes indépendantes           |
 | `ui-context.tsx`        | état partagé `aboutTab`                                         | client                                                       |
 | `skills.tsx`            | grilles de compétences                                          | `skillGroups`                                                |
 | `experience.tsx`        | chronologie professionnelle avec fade-up progressif des entrées | `experiences`, `SectionReveal`                               |
@@ -339,23 +385,30 @@ argument lors du build Docker, ou vaut `unknown` en développement local.
 ### `components/blog/`
 
 - `blog-card.tsx` : carte réutilisable de l’index ;
+- `blog-cover.tsx` : couverture générée affichée avec `next/image` ;
 - `blog-subnav.tsx` : sous-navigation sticky de l’index et des articles ;
 - `article-header.tsx` : tag, date, auteur et rôle ;
+- `article-reading-progress.tsx` : wrapper client qui mesure uniquement l'article ;
+- `article-table-of-contents.tsx` : ancres accessibles des grandes sections ;
+- `article-author.tsx` : preuve d'auteur et liens professionnels ;
+- `article-navigation.tsx` : plus récent, plus ancien et « À lire aussi » ;
+- `article-heading.tsx` : titre `h2` de section, style et décalage d'ancre partagés ;
 - `article-callout.tsx` : encart éditorial ;
 - `article-code-block.tsx` : bloc de code stylisé ;
 - `article-tags.tsx` : liste de tags ;
 - `article-cta.tsx` : liens vers le chat et le contact ;
 - `article-footer.tsx` : pied de page minimal ;
+- `json-ld.tsx` : injecte des données structurées JSON-LD échappées ;
 - `articles/index.tsx` : registre obligatoire des composants d’articles ;
-- `articles/*.tsx` : trois articles complets, enregistrés explicitement par slug et
-  découpés en blocs éditoriaux animés par `SectionReveal`.
+- `articles/*.tsx` : quatre articles complets, enregistrés explicitement par slug et
+  rendus statiquement sans animation d'apparition.
 
 ### `components/ui/`
 
 `button.tsx`, `input.tsx`, `textarea.tsx` et `sheet.tsx` sont des primitives génériques
-shadcn/Base UI. `section-reveal.tsx` centralise le fade-up Motion partagé par le
-portfolio, l’index du blog et les blocs des articles. Ne pas placer de contenu métier
-dans ce dossier.
+shadcn/Base UI. `section-reveal.tsx` centralise le fade-up Motion du portfolio ; le
+blog ne l'utilise pas afin de conserver un rendu immédiat et robuste sans JavaScript.
+Ne pas placer de contenu métier dans ce dossier.
 
 ## 10. Sources de données
 
@@ -364,27 +417,27 @@ dans ce dossier.
 - `navItems` : navigation et footer ;
 - `roles` : animation du Hero ;
 - `bio` et `aboutCards` : onglet Profil ;
-- `skillGroups` : compétences et prompt IA ;
-- `experiences` : expérience et prompt IA ;
-- `projectsData` et `filters` : projets, filtres et prompt IA ;
-- `education` : formation et prompt IA ;
-- `blogPosts` : cartes, slugs et métadonnées du blog ;
+- `skillGroups` : compétences affichées ;
+- `experiences` : expérience affichée ;
+- `projectsData` et `filters` : projets et filtres ;
+- `education` : formation affichée ;
+- `blogPosts` : cartes, slugs, dates ISO, tags, intention de recherche, couverture,
+  table des matières et métadonnées du blog ;
 - `chatQA` : questions suggérées, sans réponses prédéfinies.
 
-`lib/system-prompt.ts` utilise `bio`, `education`, `experiences`, `projectsData` et
-`skillGroups`. Modifier ces collections change le site et les connaissances du modèle.
-
-Ne sont pas injectés dans le prompt : `aboutCards`, `roles`, `blogPosts`, `chatQA`,
-les articles et les coordonnées écrites directement dans les composants.
+Les connaissances du RAG ne sont plus dérivées de ces collections. Elles sont
+maintenues et indexées dans `my-portfolio-backend/knowledges/`. Modifier
+`lib/data.ts` change l’affichage du site, pas les réponses de l’assistant.
 
 ## 11. Flux interactifs
 
 ### Chat
 
-`About` affiche temporairement un panneau de maintenance statique. Les suggestions,
-la saisie et le transport `useChat` ne sont pas chargés, et `POST /api/chat` répond
-`503`. Le code de référence nécessaire à la réactivation est conservé en commentaires
-dans la route et le composant.
+`About` conserve un historique visuel en mémoire, mais chaque requête envoyée à
+`POST /api/chat` contient seulement la nouvelle question. Une seule requête peut être
+en cours ; suggestions et saisie sont alors désactivées. Le composant affiche les
+paragraphes en texte simple, sans sources ni rendu Markdown, et fait défiler la zone
+vers le dernier message. L’historique disparaît au rechargement de la page.
 
 ### Navigation et état partagé
 
@@ -429,16 +482,17 @@ dans la route et le composant.
 - Polices Inter et JetBrains Mono via `next/font`.
 - Palette Zinc, Cyan, Teal et Amber.
 - Conteneur habituel : `max-w-6xl` avec `px-8`.
-- Sections séparées par `border-zinc-900`. Leur contenu complet, Hero inclus, est
+- Sections du portfolio séparées par `border-zinc-900`. Leur contenu complet, Hero inclus, est
   enveloppé par `SectionReveal` pour un fade-up Motion joué une seule fois à l’entrée
   dans le viewport et neutralisé lorsque les mouvements réduits sont demandés. Les
   entrées de la chronologie Expérience réutilisent ce wrapper avec un léger délai
   progressif.
-- L’index du blog révèle séparément son introduction, l’article à la une et chaque
-  carte. Les articles révèlent leur en-tête, leur couverture, leurs grandes sections,
-  leurs tags et leur CTA afin qu’aucun wrapper animé ne couvre un contenu trop haut.
-- Le défilement Motion est réservé à l’accueil ; le blog et ses articles conservent
-  leurs éventuels reveals mais utilisent un défilement instantané.
+- L’index et les articles du blog n'utilisent aucun `SectionReveal` : titres,
+  couvertures, paragraphes et blocs de fin sont visibles dès le HTML initial.
+- Le défilement Motion animé est réservé à l’accueil. Sur le blog, seule la barre
+  de progression des articles est liée au défilement : elle est fixée sous la
+  sous-navigation à `top: 134px`, suit la hauteur de l'élément `<article>` et est
+  masquée avec `prefers-reduced-motion`.
 - Tailwind CSS 4 et tokens shadcn dans `app/globals.css`.
 - Alias TypeScript `@/*` vers la racine.
 - Contenu et interface en français.
@@ -449,9 +503,9 @@ dans la route et le composant.
 
 ### Modifier une information du portfolio
 
-Commencer par `lib/data.ts`, puis vérifier son impact dans `lib/system-prompt.ts`.
-Les liens sociaux et certains textes du Hero sont encore écrits directement dans les
-composants.
+Commencer par `lib/data.ts`. Les connaissances conversationnelles sont indépendantes
+et doivent être modifiées dans le dépôt backend avant une réindexation. Les liens
+sociaux et certains textes du Hero sont encore écrits directement dans les composants.
 
 ### Ajouter une section à l’accueil
 
@@ -465,7 +519,11 @@ composants.
 ### Ajouter un article
 
 1. Ajouter ses métadonnées et son slug dans `blogPosts`.
+   Renseigner notamment les dates ISO, les tags, l'intention de recherche, le chemin
+   de couverture et les identifiants de table des matières.
 2. Créer le contenu dans `components/blog/articles/`.
+   Utiliser `ArticleHeading` pour chaque grande section ; son `id` doit correspondre
+   à l'entrée de `sections`.
 3. L’importer dans `components/blog/articles/index.tsx`.
 4. Enregistrer exactement le même slug dans `articleRegistry`.
 5. Vérifier `/blog`, `/blog/<slug>`, les métadonnées et `npm run build`.
@@ -477,12 +535,14 @@ introuvable.
 
 Considérer ensemble :
 
-- UI/transport : `components/portfolio/about.tsx` ;
-- endpoint/modèle : `app/api/chat/route.ts` ;
-- connaissances : `lib/system-prompt.ts` et `lib/data.ts`.
+- UI et historique local : `components/portfolio/about.tsx` ;
+- contrats partagés : `lib/chat-schema.ts` ;
+- validation, quota et proxy : `app/api/chat/route.ts` ;
+- retrieval, prompt, LLM et connaissances : dépôt `my-portfolio-backend`.
 
-Un vrai RAG nécessitera de nouvelles briques d’ingestion, stockage, recherche et
-citation ; elles n’existent pas encore.
+Le contrat actuel est un JSON synchrone. Le futur streaming devra ajouter une route
+distincte côté NestJS et côté Next.js, propager l’annulation du navigateur et conserver
+la route JSON comme fallback et point de test.
 
 ### Modifier le formulaire de contact
 
@@ -516,13 +576,16 @@ secrets. Cette liste est un aide-mémoire local, pas un mécanisme de sécurité
   le réécrit, et sans cet en-tête toutes les requêtes partagent le même compteur. Le
   domaine bac à sable `onboarding@resend.dev` n’autorise l’envoi qu’à l’adresse du
   titulaire du compte Resend ; envoyer ailleurs exigera un domaine vérifié.
-- Images de projets, blog, auteur et schéma : `ImagePlaceholder`.
+- Les images de projets restent des `ImagePlaceholder`. Les couvertures de blog sont
+  des visuels générés, l'auteur réutilise `hero.webp` et le schéma RAG est rendu en
+  HTML/CSS accessible ; de vraies illustrations pourront les remplacer plus tard.
 - Plusieurs projets utilisent encore un titre ou une description « à venir ».
 - Badge « Disponible » et état du serveur GPU : codés en dur.
-- Le système est présenté comme RAG, mais le backend est un prompt statique enrichi.
-- `.env.local.example` omet `LLAMACPP_API_KEY`, pourtant l’application la lit.
-- API chat sans validation du corps, limitation d’usage ou protection d’accès.
-- Aucun test automatisé, CI visible, suivi analytique ou SEO avancé.
+- Le quota du chat vit en mémoire : il repart de zéro au redémarrage, n’est pas partagé
+  entre instances et dépend d’un reverse proxy qui réécrit les headers IP.
+- Le chat est synchrone : aucune réponse token par token ni annulation propagée au
+  backend n’existe encore.
+- Aucun test automatisé, suivi analytique ou intégration Search Console.
 - README générique et incorrect sur le port de développement.
 
 Ces points ne sont pas forcément à corriger dans une mission non liée. Ils évitent
@@ -557,14 +620,29 @@ Pour une modification visuelle, inspecter `/` en mobile et desktop, le menu mobi
 les filtres projets, le passage Projet → Chat, les onglets Profil/Chat, `/blog` et un
 article comme `/blog/rag-auto-heberge`.
 
-Pour tester réellement le chat, un serveur compatible OpenAI accessible via
-`LLAMACPP_BASE_URL` est requis.
+Pour tester réellement le chat, le backend NestJS, son index et ses serveurs
+d’embedding/génération doivent être accessibles via `KNOWLEDGE_API_BASE_URL`.
 
-Dernier contrôle, le 4 août 2026 avec Node.js `22.23.1` :
+Contrôle du chat, le 10 août 2026 avec Node.js `24.14.0` :
+
+- lint, typecheck et build Next.js : réussis ;
+- appel réel navigateur → `/api/chat` → NestJS → RAG : réussi ;
+- la réponse publique ne contient ni citation `[S…]`, ni source structurée, ni clé ;
+- la clé de service est absente de `.next/static` ;
+- quota vérifié : dix requêtes comptabilisées dans la fenêtre, puis HTTP `429` ;
+- contrôles du chat à 390×844 et 1440×900 : aucun débordement horizontal et
+  aucune erreur ou alerte dans la console.
+
+Contrôle SEO/blog précédent, le 6 août 2026 avec Node.js `22.23.1` :
 
 - `npm run lint` : réussi ;
 - `npm run typecheck` : réussi ;
 - `npm run build` : réussi ;
 - `git diff --check` : réussi ;
-- contrôles visuels et comportementaux des ancres et du fade-up laissés à
-  l’utilisateur, sans test navigateur effectué par Codex.
+- `/robots.txt`, `/sitemap.xml`, les quatre articles et les cinq routes PNG : HTTP
+  200 avec les types de contenu attendus ;
+- contrôles navigateur réussis à 390×844 et 1440×900 : index, article RAG,
+  couvertures, table des matières, absence de débordement horizontal et barre de
+  progression fixée à 134 px ; aucune erreur ni avertissement dans la console.
+- les quatre HTML d'articles ne contiennent aucun état initial masqué de
+  `SectionReveal` ; le contenu reste rendu statiquement sans JavaScript.

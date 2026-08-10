@@ -15,9 +15,8 @@ export const navItems: NavItem[] = [
 
 export const roles = [
   "Développeur FullStack",
-  "Ingénieur IA",
   "Techno-Artisan",
-  "ML Explorer",
+  "IA/ML Explorer",
 ];
 
 export const bio: string[] = [
@@ -40,18 +39,18 @@ export const aboutCards: AboutCard[] = [
   },
   {
     glyph: "◆",
-    title: "Intelligence artificielle",
-    desc: "Explorer les modèles, les agents et les pipelines RAG pour construire des usages concrets.",
+    title: "IA & auto-hébergement",
+    desc: "Explorer les modèles, les agents et les outils que je peux faire tourner et comprendre par moi-même.",
   },
   {
-    glyph: "</>",
-    title: "Qualité logicielle",
-    desc: "Privilégier un code lisible, maintenable et adapté aux besoins réels du projet.",
+    glyph: "✦",
+    title: "Gravure & bijouterie",
+    desc: "Des activités manuelles qui nourrissent ma précision, ma créativité et mon goût du travail bien fait.",
   },
   {
-    glyph: "→",
-    title: "Conception & résolution",
-    desc: "Analyser les problématiques complexes et les transformer en solutions claires et durables.",
+    glyph: "↗",
+    title: "Sport & équilibre",
+    desc: "Le sport m'aide à garder un rythme régulier, de la discipline et un équilibre au quotidien.",
   },
 ];
 
@@ -100,7 +99,7 @@ export const skillGroups: SkillGroup[] = [
   },
   {
     title: "Outils",
-    tags: ["Git / GitHub", "Docker Compose", "Jira", "Claude Code", "Codex"],
+    tags: ["Git / GitHub", "Docker Compose", "Claude Code", "Codex"],
   },
   {
     title: "Bonnes pratiques",
@@ -227,10 +226,21 @@ export const education: EducationItem[] = [
 export type BlogPost = {
   slug: string;
   tag: string;
-  date: string;
+  publishedAt: string;
+  modifiedAt: string;
   readTime: string;
   title: string;
   excerpt: string;
+  tags: string[];
+  searchIntent: string;
+  image: {
+    src: string;
+    alt: string;
+  };
+  sections: {
+    id: string;
+    title: string;
+  }[];
 };
 
 // Ordre du plus récent au plus ancien : `app/blog/page.tsx` met blogPosts[0] à la une.
@@ -238,38 +248,96 @@ export const blogPosts: BlogPost[] = [
   {
     slug: "rag-auto-heberge",
     tag: "IA",
-    date: "3 juin 2026",
+    publishedAt: "2026-06-03",
+    modifiedAt: "2026-06-03",
     readTime: "6 min",
     title: "Construire un agent RAG auto-hébergé de A à Z",
     excerpt:
       "Retour d'expérience sur la conception d'un assistant documentaire qui tourne entièrement sur mon homelab, du choix du modèle au pipeline d'ingestion.",
+    tags: ["RAG", "Auto-hébergement", "LLM", "Homelab"],
+    searchIntent: "Comment construire un agent RAG auto-hébergé ?",
+    image: {
+      src: "/blog/rag-auto-heberge/cover",
+      alt: "Couverture graphique de l'article sur la construction d'un agent RAG auto-hébergé",
+    },
+    sections: [
+      { id: "prerequis", title: "Objectif et prérequis" },
+      { id: "pourquoi-auto-heberger", title: "Pourquoi auto-héberger" },
+      { id: "architecture", title: "L'architecture retenue" },
+      { id: "evaluation", title: "Évaluer avant d'optimiser" },
+      { id: "retour-experience", title: "Ce que je referais différemment" },
+      { id: "conclusion", title: "Conclusion" },
+    ],
   },
   {
     slug: "homelab-docker-compose",
     tag: "Homelab",
-    date: "18 mai 2026",
+    publishedAt: "2026-05-18",
+    modifiedAt: "2026-05-18",
     readTime: "5 min",
     title: "Structurer un homelab avec Docker Compose",
     excerpt:
       "Comment j'organise une dizaine de services auto-hébergés avec un seul fichier Compose lisible, des réseaux isolés et des sauvegardes qui tiennent la route.",
+    tags: ["Docker", "Homelab", "Auto-hébergement", "DevOps"],
+    searchIntent: "Comment structurer un homelab avec Docker Compose ?",
+    image: {
+      src: "/blog/homelab-docker-compose/cover",
+      alt: "Couverture graphique de l'article sur l'organisation d'un homelab avec Docker Compose",
+    },
+    sections: [
+      { id: "objectif", title: "Objectif et organisation" },
+      { id: "reseaux-isoles", title: "Un seul fichier, des réseaux isolés" },
+      { id: "secrets-configuration", title: "Séparer secrets et configuration" },
+      { id: "sauvegardes", title: "Des sauvegardes qui tiennent la route" },
+      { id: "conclusion", title: "Conclusion" },
+    ],
   },
   {
     slug: "next-app-router-workflow",
     tag: "Web",
-    date: "2 mai 2026",
+    publishedAt: "2026-05-02",
+    modifiedAt: "2026-05-02",
     readTime: "7 min",
     title: "Next.js App Router : ce qui a changé dans mon workflow",
     excerpt:
       "Server Components, layouts imbriqués et streaming ont rebattu les cartes. Les habitudes que j'ai gardées, celles que j'ai abandonnées, et pourquoi.",
+    tags: ["Next.js", "React", "Server Components", "Web"],
+    searchIntent: "Comment adopter un workflow efficace avec Next.js App Router ?",
+    image: {
+      src: "/blog/next-app-router-workflow/cover",
+      alt: "Couverture graphique de l'article sur le workflow Next.js App Router",
+    },
+    sections: [
+      { id: "objectif", title: "Ce que l'App Router change" },
+      { id: "frontiere-server-client", title: "Choisir la frontière serveur-client" },
+      { id: "habitudes-gardees", title: "Les habitudes que j'ai gardées" },
+      { id: "habitudes-abandonnees", title: "Ce que j'ai abandonné" },
+      { id: "conclusion", title: "Conclusion" },
+    ],
   },
   {
     slug: "prompt-engineering-patterns",
     tag: "IA",
-    date: "14 avril 2026",
+    publishedAt: "2026-04-14",
+    modifiedAt: "2026-04-14",
     readTime: "5 min",
     title: "Prompt engineering : les patterns qui tiennent en prod",
     excerpt:
       "Au-delà des astuces virales, quelques schémas de prompts robustes qui survivent aux changements de modèle et aux entrées utilisateur imprévisibles.",
+    tags: ["Prompt Engineering", "LLM", "IA", "Fiabilité"],
+    searchIntent: "Quels patterns rendent les prompts robustes en production ?",
+    image: {
+      src: "/blog/prompt-engineering-patterns/cover",
+      alt: "Couverture graphique de l'article sur les patterns de prompt engineering fiables en production",
+    },
+    sections: [
+      { id: "objectif", title: "Ce qu'un prompt de production doit garantir" },
+      { id: "instruction-donnee", title: "Séparer instruction et donnée" },
+      { id: "sortie-contrainte", title: "Contraindre la sortie" },
+      { id: "evaluation", title: "Versionner et évaluer" },
+      { id: "prevoir-echec", title: "Prévoir l'échec" },
+      { id: "conclusion", title: "Conclusion" },
+    ],
   },
 ];
 
