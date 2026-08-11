@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CircleQuestionMark } from "lucide-react";
+import { CircleQuestionMark, TriangleAlert } from "lucide-react";
 import { useAboutTabContext } from "@/components/portfolio/ui-context";
 import { Input } from "@/components/ui/input";
 import { SectionReveal } from "@/components/ui/section-reveal";
@@ -176,7 +176,7 @@ export function About() {
               {aboutCards.map((card) => (
                 <div
                   key={card.title}
-                  className="min-h-[200px] rounded-[10px] border border-zinc-800 bg-zinc-900 p-5"
+                  className="min-h-[200px] rounded-[10px] border border-zinc-800 bg-zinc-900 p-6"
                 >
                   <div className="mb-3 flex size-9.5 items-center justify-center rounded-lg border border-cyan-400/20 bg-cyan-400/10 font-mono text-[15px] font-bold text-cyan-400">
                     {card.glyph}
@@ -208,7 +208,7 @@ export function About() {
                   Mode léger
                 </div>
                 <span className="group relative inline-flex text-zinc-600">
-                  <CircleQuestionMark className="size-4" aria-hidden="true" />
+                  <CircleQuestionMark className="size-5" aria-hidden="true" />
                   <span className="pointer-events-none absolute top-[calc(100%+12px)] right-[-8px] z-20 w-65 rounded-[10px] border border-zinc-800 bg-zinc-900 p-4 text-left opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.4)] transition-opacity group-hover:opacity-100">
                     <span className="mb-2.5 flex items-center gap-2 text-[13.5px] font-bold text-zinc-200">
                       <span className="text-zinc-300">✦</span> Mode léger
@@ -235,14 +235,29 @@ export function About() {
                   </span>
                 </span>
                 <span className="text-zinc-800">|</span>
-                <a
-                  href="#"
-                  onClick={(event) => event.preventDefault()}
-                  className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-cyan-400 hover:text-cyan-300"
+                <span
+                  aria-disabled="true"
+                  title="Architecture bientôt disponible"
+                  className="inline-flex cursor-default items-center gap-1 text-[12.5px] font-semibold text-zinc-600"
                 >
                   Voir l&apos;architecture →
-                </a>
+                </span>
               </div>
+            </div>
+            <div
+              role="note"
+              className="flex gap-2.5 border-b border-amber-400/15 bg-amber-400/[0.04] px-5.5 py-3 text-[12.5px] leading-relaxed text-zinc-400"
+            >
+              <TriangleAlert
+                className="mt-0.5 size-4 shrink-0 text-amber-300"
+                aria-hidden="true"
+              />
+              <p>
+                Cet assistant est expérimental : ses réponses peuvent contenir des
+                erreurs ou des imprécisions. Si vous avez un doute sur une réponse,
+                vérifiez l’information auprès d’une source fiable (cv, linkedin) ou contactez-moi. J’améliore continuellement ce
+                chat grâce à vos retours.
+              </p>
             </div>
             <div className="grid grid-cols-1 overflow-hidden rounded-b-[10px] bg-zinc-900 md:grid-cols-[250px_1fr]">
               <div className="border-b border-zinc-800 px-4 py-5 md:border-r md:border-b-0">

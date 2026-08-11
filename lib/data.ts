@@ -62,13 +62,12 @@ export type SkillGroup = {
 export const skillGroups: SkillGroup[] = [
   {
     title: "Frontend",
-    tags: ["React", "Next.js", "TypeScript", "Tailwind CSS"],
+    tags: ["React.js", "Next.js", "TypeScript", "Tailwind CSS"],
   },
   {
     title: "Backend",
     tags: [
       "Node.js",
-      "Python",
       "Express",
       "PostgreSQL",
       "REST / GraphQL",
@@ -99,11 +98,11 @@ export const skillGroups: SkillGroup[] = [
   },
   {
     title: "Outils",
-    tags: ["Git / GitHub", "Docker Compose", "Claude Code", "Codex"],
+    tags: ["Git", "Docker Compose", "Claude Code", "Codex"],
   },
   {
     title: "Bonnes pratiques",
-    tags: ["Tests unitaires", "Code review", "System Design", "Agile", "CI/CD"],
+    tags: ["Tests unitaires", "Code review", "System Design", "Agile", "Clean code"],
   },
 ];
 
@@ -147,6 +146,7 @@ export type Project = {
   tags: string[];
   title: string;
   desc: string;
+  status?: "in-progress" | "planned";
 };
 
 export const projectsData: Project[] = [
@@ -160,21 +160,23 @@ export const projectsData: Project[] = [
   {
     id: "proj-2",
     category: "web",
-    tags: ["Web", "Fullstack"],
-    title: "Plateforme de gestion de projets",
-    desc: "Description à venir.",
+    tags: ["Web", "Homelab", "DevOps"],
+    title: "Monitoring de mon homelab",
+    desc: "Une application légère pour suivre l'état de mes services auto-hébergés, leurs ressources et leur disponibilité.",
+    status: "in-progress",
   },
   {
     id: "proj-3",
     category: "web",
     tags: ["Web"],
-    title: "Projet à venir",
-    desc: "Description à venir.",
+    title: "ERP devis & factures pour bijoutiers",
+    desc: "Un outil léger pour gérer les devis et les factures, pensé pour les créateurs indépendants qui veulent gagner du temps.",
+    status: "in-progress",
   },
 ];
 
 export type ProjectFilter = {
-  key: "all" | "ia" | "web";
+  key: "all" | "ia" | "web" | "devops";
   label: string;
 };
 
@@ -182,6 +184,7 @@ export const filters: ProjectFilter[] = [
   { key: "all", label: "✨ Tous" },
   { key: "ia", label: "🤖 IA" },
   { key: "web", label: "🌐 Web" },
+  { key: "devops", label: "⚙️ DevOps" },
 ];
 
 export type EducationItem = {
@@ -346,8 +349,8 @@ export type ChatQA = {
 };
 
 export const chatQA: ChatQA[] = [
-  { q: "Quelles technologies maîtrises-tu ?" },
-  { q: "Sur quoi travailles-tu en ce moment ?" },
-  { q: "Es-tu disponible pour une mission ?" },
-  { q: "Comment te contacter ?" },
+  { q: "Peux-tu résumer ton parcours professionnel ?" },
+  { q: "Quelles sont tes compétences frontend et backend ?" },
+  { q: "Peux-tu présenter un projet technique récent ?" },
+  { q: "Sur quel projet travailles-tu en ce moment ?" },
 ];

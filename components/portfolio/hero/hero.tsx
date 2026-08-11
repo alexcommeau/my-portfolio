@@ -129,7 +129,7 @@ function HeroPortrait() {
           </div>
         </div>
         <div className="absolute right-2 -bottom-4 flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2.25 shadow-[0_4px_16px_rgba(0,0,0,0.4)] sm:-right-5">
-          <span className="size-1.75 rounded-full bg-emerald-400 motion-safe:animate-[status-glint_2.8s_ease-in-out_infinite]" />
+          <span className="size-1.75 rounded-full bg-emerald-400 motion-safe:animate-[status-glint_2.4s_ease-in-out_infinite]" />
           <span className="text-[12.5px] font-semibold">Disponible</span>
         </div>
       </div>
@@ -158,10 +158,10 @@ export function Hero() {
             <span className="animate-[blink_1s_step-start_infinite]">|</span>
           </div>
           <p className="mb-8 max-w-[520px] text-[16.5px] leading-relaxed text-zinc-400">
-            Je conçois des applications web et j&apos;explore les technologies
-            d&apos;IA générative pour créer des outils utiles, du backend à
-            l&apos;interface utilisateur. J&apos;aime transformer un problème
-            complexe en un système simple, fiable et agréable à utiliser.
+            Curieux et créatif, je crée des applications de A à Z,
+            avec autant d&apos;attention pour leur architecture que pour leur
+            expérience utilisateur. L&apos;IA fait aujourd&apos;hui partie des domaines
+            que j&apos;explore avec enthousiasme pour enrichir mes applications.
           </p>
           <div className="mb-7 flex gap-2.5">
             <a
