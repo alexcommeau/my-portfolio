@@ -375,7 +375,7 @@ argument lors du build Docker, ou vaut `unknown` en développement local.
 | `ui-context.tsx`        | état partagé `aboutTab`                                         | client                                                       |
 | `skills.tsx`            | grilles de compétences                                          | `skillGroups`                                                |
 | `experience.tsx`        | chronologie professionnelle avec fade-up progressif des entrées | `experiences`, `SectionReveal`                               |
-| `projects.tsx`          | filtres IA/Web et cartes projet                                 | client ; contexte partagé                                    |
+| `projects.tsx`          | filtres IA/Web/DevOps, aperçus de projet et cartes avec état « en cours » | client ; contexte partagé                                    |
 | `education.tsx`         | cartes de formation                                             | `education`                                                  |
 | `contact.tsx`           | formulaire contrôlé, validé et envoyé                           | client ; `contactSchema`, `POST /api/contact`                |
 | `footer.tsx`            | ancres, liens sociaux et copyright                              | `navItems`                                                   |
@@ -419,7 +419,9 @@ Ne pas placer de contenu métier dans ce dossier.
 - `bio` et `aboutCards` : onglet Profil ;
 - `skillGroups` : compétences affichées ;
 - `experiences` : expérience affichée ;
-- `projectsData` et `filters` : projets et filtres ;
+- `projectsData` et `filters` : projets et filtres IA/Web/DevOps ; le filtre DevOps
+  cible les projets portant le tag `DevOps`. `Project.status` peut signaler un projet
+  « en cours » ou « prévu » pour adapter son aperçu et ses actions ;
 - `education` : formation affichée ;
 - `blogPosts` : cartes, slugs, dates ISO, tags, intention de recherche, couverture,
   table des matières et métadonnées du blog ;

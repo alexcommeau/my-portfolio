@@ -21,6 +21,22 @@ const globalForChat = globalThis as unknown as {
 };
 const buckets = (globalForChat.chatRateLimit ??= new Map<string, number[]>());
 
+/**
+ * Désactive le quota par défaut en développement et en test, tout en le
+ * conservant en production. La variable permet de surcharger ce choix lorsque
+ * l'environnement de test exécute une build Next.js en mode production.
+ */
+function isRateLimitEnabled(): boolean {
+  const configured = process.env.KNOWLEDGE_CHAT_RATE_LIMIT_ENABLED
+    ?.trim()
+    .toLowerCase();
+
+  if (configured === "true") return true;
+  if (configured === "false") return false;
+
+  return process.env.NODE_ENV === "production";
+}
+
 /** Produit toutes les réponses publiques avec un cache explicitement désactivé. */
 function json(
   body: ChatSuccessResponse | ChatErrorResponse,
@@ -100,7 +116,9 @@ function getKnowledgeEndpoint(baseUrl: string): URL | null {
 
 /** Relaye une question validée au backend RAG sans exposer sa clé au navigateur. */
 export async function POST(request: Request) {
-  const retryAfter = checkRateLimit(getClientIp(request));
+  const retryAfter = isRateLimitEnabled()
+    ? checkRateLimit(getClientIp(request))
+    : null;
   if (retryAfter !== null) {
     return json(
       {
