@@ -148,16 +148,19 @@
 @keyframes status-glint {
   0%,
   100% {
-    opacity: 0.82;
-    box-shadow: 0 0 0 0 rgb(52 211 153 / 0%);
+    opacity: 0.65;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgb(52 211 153 / 0%), 0 0 0 rgb(52 211 153 / 0%);
   }
-  45% {
+  35% {
     opacity: 1;
-    box-shadow: 0 0 0 3px rgb(52 211 153 / 14%);
+    transform: scale(1.35);
+    box-shadow: 0 0 0 5px rgb(52 211 153 / 42%), 0 0 16px 4px rgb(52 211 153 / 78%);
   }
-  60% {
-    opacity: 0.9;
-    box-shadow: 0 0 0 1px rgb(52 211 153 / 8%);
+  52% {
+    opacity: 0.82;
+    transform: scale(1.12);
+    box-shadow: 0 0 0 3px rgb(52 211 153 / 24%), 0 0 10px 2px rgb(52 211 153 / 48%);
   }
 }
 
