@@ -1,7 +1,4 @@
-import {
-  chatRequestSchema,
-  chatSuccessResponseSchema,
-} from "@/lib/chat-schema";
+import { chatRequestSchema } from "@/lib/chat-schema";
 import {
   chatJson,
   enforceChatRateLimit,
@@ -12,7 +9,7 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 95;
 
-/** Relaye une question validée au backend RAG sans exposer sa clé au navigateur. */
+/** Relaye le flux SSE Nest.js tout en gardant la clé privée côté serveur. */
 export async function POST(request: Request) {
   const rateLimitResponse = enforceChatRateLimit(request);
   if (rateLimitResponse) return rateLimitResponse;
@@ -29,17 +26,15 @@ export async function POST(request: Request) {
     return chatJson({ error: "La question envoyée est invalide." }, 400);
   }
 
-  // Les variables sont lues dans le handler : aucun secret n’est nécessaire
-  // pendant `next build` et elles restent modifiables au runtime en production.
   const baseUrl = process.env.KNOWLEDGE_API_BASE_URL?.trim();
   const chatKey = process.env.KNOWLEDGE_CHAT_KEY?.trim();
   const endpoint = baseUrl
-    ? getKnowledgeEndpoint(baseUrl, "knowledge/ask")
+    ? getKnowledgeEndpoint(baseUrl, "knowledge/ask/stream")
     : null;
 
   if (!endpoint || !chatKey) {
     console.error(
-      "[chat] KNOWLEDGE_API_BASE_URL ou KNOWLEDGE_CHAT_KEY non configurée.",
+      "[chat-stream] KNOWLEDGE_API_BASE_URL ou KNOWLEDGE_CHAT_KEY non configurée.",
     );
     return chatJson(
       { error: "L’assistant est temporairement indisponible." },
@@ -47,20 +42,27 @@ export async function POST(request: Request) {
     );
   }
 
+  const timeoutSignal = AbortSignal.timeout(getChatUpstreamTimeoutMs());
+  const signal = AbortSignal.any([request.signal, timeoutSignal]);
+
   try {
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
+        Accept: "text/event-stream",
         "Content-Type": "application/json",
         "x-knowledge-chat-key": chatKey,
       },
       body: JSON.stringify(parsedRequest.data),
-      signal: AbortSignal.timeout(getChatUpstreamTimeoutMs()),
+      signal,
       cache: "no-store",
     });
 
     if (!response.ok) {
-      console.error("[chat] Le backend RAG a répondu %d.", response.status);
+      console.error(
+        "[chat-stream] Le backend RAG a répondu %d.",
+        response.status,
+      );
 
       if (response.status === 400) {
         return chatJson({ error: "La question envoyée est invalide." }, 400);
@@ -72,22 +74,32 @@ export async function POST(request: Request) {
       );
     }
 
-    const upstreamBody: unknown = await response.json().catch(() => null);
-    const parsedResponse = chatSuccessResponseSchema.safeParse(upstreamBody);
-
-    if (!parsedResponse.success) {
-      console.error("[chat] Le backend RAG a renvoyé un contrat invalide.");
+    const contentType = response.headers.get("content-type");
+    if (!response.body || !contentType?.includes("text/event-stream")) {
+      console.error("[chat-stream] Le backend RAG n’a pas renvoyé un flux SSE.");
       return chatJson(
         { error: "L’assistant a renvoyé une réponse invalide." },
         502,
       );
     }
 
-    return chatJson(parsedResponse.data, 200);
-  } catch (error) {
-    const timedOut = error instanceof Error && error.name === "TimeoutError";
+    return new Response(response.body, {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store, no-transform",
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "X-Accel-Buffering": "no",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
+  } catch {
+    if (request.signal.aborted) {
+      return new Response(null, { status: 499 });
+    }
+
+    const timedOut = timeoutSignal.aborted;
     console.error(
-      "[chat] Appel du backend RAG en échec :",
+      "[chat-stream] Appel du backend RAG en échec :",
       timedOut ? "timeout" : "connexion impossible",
     );
 

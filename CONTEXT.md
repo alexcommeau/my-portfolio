@@ -1,7 +1,7 @@
 # Cartographie du projet
 
 > Document de reprise destiné aux humains et aux agents IA. Il décrit le dépôt tel
-> qu’il a été vérifié le 10 août 2026. Le code reste la source de vérité : avant
+> qu’il a été vérifié le 11 août 2026. Le code reste la source de vérité : avant
 > toute intervention, relire `AGENTS.md`, exécuter `git status --short` et vérifier
 > les fichiers concernés.
 
@@ -11,7 +11,8 @@ Ce dépôt est le portfolio personnel d’Alex Commeau, en français, avec :
 
 - une page d’accueil mono-page présentant profil, projets, compétences, expérience,
   formation et contact ;
-- un assistant conversationnel relié au backend RAG NestJS par une façade Next.js ;
+- un assistant conversationnel streamé, relié au backend RAG Nest.js par une
+  façade Next.js qui conserve les secrets côté serveur ;
 - un index de blog autonome et des articles statiques écrits en composants React/TSX ;
 - un socle SEO avec URLs canoniques, sitemap, robots, données structurées et
   images sociales générées ;
@@ -23,8 +24,9 @@ ni CMS. Le contenu métier est principalement codé dans `lib/data.ts`.
 
 État fonctionnel important :
 
-- le chat de la section À propos est actif : `POST /api/chat` valide et limite les
-  requêtes, puis appelle le backend NestJS sans exposer sa clé de service ;
+- le chat de la section À propos est actif : `POST /api/chat/stream` valide et
+  limite les requêtes, puis relaie les tokens du backend Nest.js sans exposer sa
+  clé de service ; `POST /api/chat` reste disponible comme fallback JSON ;
 - le formulaire de contact poste vers `POST /api/contact`, qui valide la saisie avec
   zod puis relaie le message par l’API HTTP Resend ; il répond `503` tant que
   `RESEND_API_KEY` est absente ;
@@ -63,7 +65,6 @@ Toujours préserver les modifications déjà présentes dans le worktree.
 | React / React DOM       | `19.2.4`                                         |
 | TypeScript              | `^5`, mode strict                                |
 | Tailwind CSS            | `^4`, via PostCSS                                |
-| AI SDK                  | `ai ^7.0.29`, `@ai-sdk/react ^4.0.32`, réservés au futur streaming |
 | Animations interactives | Motion `^12.43.0`                                |
 | Primitives UI           | Base UI, shadcn, Lucide React                    |
 | Gestionnaire            | npm, verrouillage par `package-lock.json`        |
@@ -101,9 +102,9 @@ Le modèle attendu est documenté dans `.env.local.example`.
 
 | Variable                    |      Obligatoire | Utilisation                                                              |
 | --------------------------- | ---------------: | ------------------------------------------------------------------------ |
-| `KNOWLEDGE_API_BASE_URL`    | pour le chat oui | URL privée du backend NestJS, sans suffixe `/knowledge/ask`              |
-| `KNOWLEDGE_CHAT_KEY`        | pour le chat oui | secret partagé Next.js → NestJS, jamais exposé au navigateur             |
-| `KNOWLEDGE_API_TIMEOUT_MS`  |              non | timeout du RAG ; fallback `90000`                                        |
+| `KNOWLEDGE_API_BASE_URL`    | pour le chat oui | URL privée du backend Nest.js, sans suffixe `/knowledge/ask`             |
+| `KNOWLEDGE_CHAT_KEY`        | pour le chat oui | secret partagé Next.js → Nest.js, jamais exposé au navigateur            |
+| `KNOWLEDGE_API_TIMEOUT_MS`  |              non | timeout des appels JSON et SSE au RAG ; fallback `90000`                  |
 | `APP_REVISION`              |              non | SHA Git exposé par `/api/health` ; `unknown` hors build Docker versionné |
 | `RESEND_API_KEY`            | pour l’envoi oui | clé API Resend ; sans elle `POST /api/contact` répond `503`              |
 | `CONTACT_TO_EMAIL`          |              non | destinataire du formulaire ; fallback `alexcommeau@gmail.com`           |
@@ -112,8 +113,8 @@ Les variables de chat et de contact sont lues **dans leurs handlers**, jamais au
 chargement du module : la CI exécute `next build` sans secret. `.dockerignore`
 excluant `.env*`, elles doivent être injectées au runtime et jamais au build.
 
-En développement, `KNOWLEDGE_API_BASE_URL=http://127.0.0.1:3001` vise NestJS sur
-le Mac. Si NestJS tourne sur le k8 derrière un tunnel
+En développement, `KNOWLEDGE_API_BASE_URL=http://127.0.0.1:3001` vise Nest.js sur
+le Mac. Si Nest.js tourne sur le k8 derrière un tunnel
 `ssh -N -L 3002:127.0.0.1:3001 k8`, utiliser `http://127.0.0.1:3002`. En production,
 la variable doit viser le nom ou l’adresse privée joignable depuis le conteneur
 Next.js. La même `KNOWLEDGE_CHAT_KEY` doit être injectée dans les deux processus.
@@ -162,8 +163,8 @@ flowchart TD
     Cover["GET /blog/[slug]/cover"]
     Seo["GET /sitemap.xml et /robots.txt"]
     ChatUI["About / historique local"]
-    ChatAPI["POST /api/chat"]
-    NestChat["NestJS POST /knowledge/ask"]
+    ChatAPI["POST /api/chat/stream"]
+    NestChat["Nest.js POST /knowledge/ask/stream"]
     Rag["Retrieval + génération"]
     ContactUI["Contact / formulaire"]
     ContactAPI["POST /api/contact"]
@@ -182,8 +183,8 @@ flowchart TD
     Article --> Cover
     Seo --> Data
     Home --> ChatUI
-    ChatUI --> ChatAPI
-    ChatAPI -->|"x-knowledge-chat-key"| NestChat
+    ChatUI -->|"fetch + lecture SSE"| ChatAPI
+    ChatAPI -->|"SSE + x-knowledge-chat-key"| NestChat
     NestChat --> Rag
     Home --> ContactUI
     ContactUI --> ContactAPI
@@ -205,7 +206,8 @@ portant `"use client"` gèrent les interactions, les animations ou le chat.
 │   ├── social-image/route.ts      # image sociale globale générée
 │   ├── page.tsx                   # Composition et ordre des sections
 │   ├── globals.css                # Tailwind, thème, défilement et animations
-│   ├── api/chat/route.ts          # façade JSON validée et limitée vers NestJS
+│   ├── api/chat/route.ts          # fallback JSON validé et limité vers Nest.js
+│   ├── api/chat/stream/route.ts   # relais SSE et annulation vers Nest.js
 │   ├── api/contact/route.ts       # POST validé, anti-spam et relais Resend
 │   ├── api/health/route.ts        # état du conteneur et révision déployée
 │   ├── blog/page.tsx              # Index statique des articles
@@ -222,7 +224,9 @@ portant `"use client"` gèrent les interactions, les animations ou le chat.
 │   ├── data.ts                    # Source centrale du contenu
 │   ├── site.ts                    # domaine canonique, identité, auteur et schéma Person
 │   ├── contact-schema.ts          # Schéma zod partagé client/serveur du contact
-│   ├── chat-schema.ts             # Contrats zod de la façade et du composant chat
+│   ├── chat-schema.ts             # Contrats zod JSON et événements SSE du chat
+│   ├── chat-server.ts             # quota et configuration partagés par les deux façades
+│   ├── chat-stream.ts             # parseur SSE consommé par le composant chat
 │   └── utils.ts                   # cn() = clsx + tailwind-merge
 ├── public/
 │   └── images/                    # Portrait et fond décoratif de l’accueil
@@ -305,12 +309,12 @@ font pas partie du dépôt et ne doivent pas être modifiés dans ce flux.
 
 ### `POST /api/chat`
 
-La route est la façade publique même origine du chat. Elle accepte uniquement
+Cette route est le fallback JSON synchrone du chat. Elle accepte uniquement
 `{ question }`, normalise les espaces, refuse les champs inconnus et impose une
 longueur de 3 à 500 caractères avec `lib/chat-schema.ts`.
 
 Elle applique une fenêtre glissante de 10 requêtes par 10 minutes et par IP, puis
-appelle `POST /knowledge/ask` sur le backend NestJS avec le header privé
+appelle `POST /knowledge/ask` sur le backend Nest.js avec le header privé
 `x-knowledge-chat-key`. Le navigateur ne reçoit que `{ answer, answered }` : clé,
 modèle, scores, chunks, chemins et sources restent côté serveur.
 
@@ -326,6 +330,24 @@ modèle, scores, chunks, chemins et sources restent côté serveur.
 Toutes les réponses portent `Cache-Control: no-store`. Les erreurs publiques sont
 génériques ; le détail d’infrastructure reste dans les logs serveur. La limitation
 est en mémoire et suppose que le reverse proxy de production réécrive les headers IP.
+
+### `POST /api/chat/stream`
+
+La route principale du chat applique la même validation et le même quota, puis
+appelle `POST /knowledge/ask/stream` sur Nest.js. Elle vérifie le statut et le type
+de contenu avant de relayer le corps SSE sans le mettre en mémoire. Le flux contient :
+
+- des événements `token` avec chaque fragment de texte ;
+- un événement `done` avec la réponse complète nettoyée et `answered` ;
+- éventuellement un événement `error` générique si la génération échoue après le
+  début de la réponse.
+
+`Cache-Control: no-store, no-transform` et `X-Accel-Buffering: no` limitent la mise
+en cache et le buffering par les proxies. Nest.js ajoute aussi un commentaire SSE
+initial supérieur à 1 Ko pour déclencher l’affichage des petits flux dans WebKit.
+Le signal d’annulation du navigateur est transmis au `fetch` Nest.js, qui le propage jusqu’au serveur génératif. Avant le
+premier token, les erreurs conservent les mêmes statuts `400`, `429`, `502`, `503`
+et `504` que la route JSON ; après le démarrage, elles passent dans le flux SSE.
 
 ### `POST /api/contact`
 
@@ -371,7 +393,7 @@ argument lors du build Docker, ou vaut `unknown` en développement local.
 | `navbar.tsx`            | navigation desktop/mobile vers les sections                     | client ; `navItems`, `SectionLink`, état du menu mobile      |
 | `section-link.tsx`      | scroll Motion vers les sections sans fragment d’URL             | client ; Motion, Router Next.js, cible temporaire en session |
 | `hero/hero.tsx`         | introduction, rôle animé, portrait avec bordure interactive et CTA | client ; Motion, `roles`, `hero.webp`                      |
-| `about.tsx`             | onglets Profil/Chat et interface du chat                        | client ; historique visuel, requêtes indépendantes           |
+| `about.tsx`             | onglets Profil/Chat et interface du chat                        | client ; historique visuel, lecture SSE, requêtes indépendantes |
 | `ui-context.tsx`        | état partagé `aboutTab`                                         | client                                                       |
 | `skills.tsx`            | grilles de compétences                                          | `skillGroups`                                                |
 | `experience.tsx`        | chronologie professionnelle avec fade-up progressif des entrées | `experiences`, `SectionReveal`                               |
@@ -436,10 +458,14 @@ maintenues et indexées dans `my-portfolio-backend/knowledges/`. Modifier
 ### Chat
 
 `About` conserve un historique visuel en mémoire, mais chaque requête envoyée à
-`POST /api/chat` contient seulement la nouvelle question. Une seule requête peut être
-en cours ; suggestions et saisie sont alors désactivées. Le composant affiche les
-paragraphes en texte simple, sans sources ni rendu Markdown, et fait défiler la zone
-vers le dernier message. L’historique disparaît au rechargement de la page.
+`POST /api/chat/stream` contient seulement la nouvelle question. Une seule requête
+peut être en cours ; suggestions et saisie sont alors désactivées. Dès le premier
+événement `token`, le message assistant est créé puis enrichi progressivement.
+L’événement `done` remplace son contenu par la réponse complète nettoyée. Une erreur
+retire la réponse partielle afin de ne pas présenter un texte tronqué comme fiable.
+Le composant annule la requête s’il est démonté, affiche du texte simple sans sources
+ni Markdown et fait défiler la zone vers le dernier message. L’historique disparaît
+au rechargement de la page.
 
 ### Navigation et état partagé
 
@@ -542,9 +568,9 @@ Considérer ensemble :
 - validation, quota et proxy : `app/api/chat/route.ts` ;
 - retrieval, prompt, LLM et connaissances : dépôt `my-portfolio-backend`.
 
-Le contrat actuel est un JSON synchrone. Le futur streaming devra ajouter une route
-distincte côté NestJS et côté Next.js, propager l’annulation du navigateur et conserver
-la route JSON comme fallback et point de test.
+Le chat utilise un contrat SSE sur des routes distinctes côté Next.js et Nest.js.
+Toute modification doit conserver l’événement final `done`, propager l’annulation
+du navigateur et préserver la route JSON comme fallback et point de test.
 
 ### Modifier le formulaire de contact
 
@@ -585,8 +611,8 @@ secrets. Cette liste est un aide-mémoire local, pas un mécanisme de sécurité
 - Badge « Disponible » et état du serveur GPU : codés en dur.
 - Le quota du chat vit en mémoire : il repart de zéro au redémarrage, n’est pas partagé
   entre instances et dépend d’un reverse proxy qui réécrit les headers IP.
-- Le chat est synchrone : aucune réponse token par token ni annulation propagée au
-  backend n’existe encore.
+- Un proxy, un CDN ou une compression configurés en dehors du dépôt peuvent encore
+  bufferiser les petits événements SSE malgré les en-têtes envoyés par l’application.
 - Aucun test automatisé, suivi analytique ou intégration Search Console.
 - README générique et incorrect sur le port de développement.
 
@@ -622,13 +648,22 @@ Pour une modification visuelle, inspecter `/` en mobile et desktop, le menu mobi
 les filtres projets, le passage Projet → Chat, les onglets Profil/Chat, `/blog` et un
 article comme `/blog/rag-auto-heberge`.
 
-Pour tester réellement le chat, le backend NestJS, son index et ses serveurs
+Pour tester réellement le chat, le backend Nest.js, son index et ses serveurs
 d’embedding/génération doivent être accessibles via `KNOWLEDGE_API_BASE_URL`.
+
+Contrôle du streaming, le 11 août 2026 avec Node.js `22.23.1` :
+
+- lint, typecheck et build Next.js : réussis ;
+- relais SSE vérifié avec trois chunks distincts reçus à environ 46, 291 et 541 ms ;
+- rendu progressif vérifié dans le navigateur, du premier token à l’événement `done` ;
+- interruption vérifiée : suppression de la réponse partielle, message d’erreur
+  générique et réactivation de la saisie ;
+- aucune erreur ni alerte dans la console du navigateur.
 
 Contrôle du chat, le 10 août 2026 avec Node.js `24.14.0` :
 
 - lint, typecheck et build Next.js : réussis ;
-- appel réel navigateur → `/api/chat` → NestJS → RAG : réussi ;
+- appel réel navigateur → `/api/chat` → Nest.js → RAG : réussi ;
 - la réponse publique ne contient ni citation `[S…]`, ni source structurée, ni clé ;
 - la clé de service est absente de `.next/static` ;
 - quota vérifié : dix requêtes comptabilisées dans la fenêtre, puis HTTP `429` ;
