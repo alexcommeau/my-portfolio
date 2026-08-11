@@ -9,8 +9,8 @@ import {
   CHAT_QUESTION_MAX_LENGTH,
   chatErrorResponseSchema,
   chatRequestSchema,
-  chatSuccessResponseSchema,
 } from "@/lib/chat-schema";
+import { ChatStreamError, readChatStream } from "@/lib/chat-stream";
 import { aboutCards, bio, chatQA } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
@@ -35,11 +35,14 @@ export function About() {
   const { aboutTab, setAboutTab } = useAboutTabContext();
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [chatStatus, setChatStatus] = useState<"idle" | "submitting">("idle");
+  const [chatStatus, setChatStatus] = useState<
+    "idle" | "waiting" | "streaming"
+  >("idle");
   const [chatError, setChatError] = useState<string | null>(null);
   const messageSequence = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const chatTyping = chatStatus === "submitting";
+  const activeRequestRef = useRef<AbortController | null>(null);
+  const chatTyping = chatStatus !== "idle";
 
   /** Maintient le dernier message visible sans gérer la conversation côté API. */
   useEffect(() => {
@@ -49,6 +52,11 @@ export function About() {
       block: "nearest",
     });
   }, [aboutTab, messages, chatStatus]);
+
+  /** Annule aussi l'appel Nest.js et le LLM si le composant disparaît. */
+  useEffect(() => {
+    return () => activeRequestRef.current?.abort();
+  }, []);
 
   /** Envoie une question indépendante et conserve uniquement l’historique visuel. */
   const askQuestion = async (rawQuestion: string) => {
@@ -73,39 +81,87 @@ export function About() {
     setMessages((current) => [...current, userMessage]);
     setChatInput("");
     setChatError(null);
-    setChatStatus("submitting");
+    setChatStatus("waiting");
+
+    const abortController = new AbortController();
+    const assistantMessageId = ++messageSequence.current;
+    let assistantMessageAdded = false;
+    activeRequestRef.current = abortController;
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch("/api/chat/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question }),
+        signal: abortController.signal,
       });
-      const body: unknown = await response.json().catch(() => null);
-      const parsedResponse = chatSuccessResponseSchema.safeParse(body);
 
-      if (response.ok && parsedResponse.success) {
-        setMessages((current) => [
-          ...current,
-          {
-            id: ++messageSequence.current,
-            role: "assistant",
-            content: parsedResponse.data.answer,
-            answered: parsedResponse.data.answered,
-          },
-        ]);
+      if (!response.ok) {
+        const body: unknown = await response.json().catch(() => null);
+        const parsedError = chatErrorResponseSchema.safeParse(body);
+        setChatError(
+          parsedError.success
+            ? parsedError.data.error
+            : "L’assistant n’a pas pu répondre. Réessayez dans un instant.",
+        );
         return;
       }
 
-      const parsedError = chatErrorResponseSchema.safeParse(body);
+      const completed = await readChatStream(response, (token) => {
+        if (!assistantMessageAdded) {
+          assistantMessageAdded = true;
+          setChatStatus("streaming");
+          setMessages((current) => [
+            ...current,
+            {
+              id: assistantMessageId,
+              role: "assistant",
+              content: token,
+            },
+          ]);
+          return;
+        }
+
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantMessageId
+              ? { ...message, content: message.content + token }
+              : message,
+          ),
+        );
+      });
+
+      setMessages((current) => {
+        const finalMessage: ChatMessage = {
+          id: assistantMessageId,
+          role: "assistant",
+          content: completed.answer,
+          answered: completed.answered,
+        };
+
+        return assistantMessageAdded
+          ? current.map((message) =>
+              message.id === assistantMessageId ? finalMessage : message,
+            )
+          : [...current, finalMessage];
+      });
+    } catch (error) {
+      if (abortController.signal.aborted) return;
+
+      if (assistantMessageAdded) {
+        setMessages((current) =>
+          current.filter((message) => message.id !== assistantMessageId),
+        );
+      }
       setChatError(
-        parsedError.success
-          ? parsedError.data.error
-          : "L’assistant n’a pas pu répondre. Réessayez dans un instant.",
+        error instanceof ChatStreamError
+          ? error.message
+          : "Connexion impossible. Vérifiez votre réseau et réessayez.",
       );
-    } catch {
-      setChatError("Connexion impossible. Vérifiez votre réseau et réessayez.");
     } finally {
+      if (activeRequestRef.current === abortController) {
+        activeRequestRef.current = null;
+      }
       setChatStatus("idle");
     }
   };
@@ -324,7 +380,7 @@ export function About() {
                     ))
                   )}
 
-                  {chatTyping ? (
+                  {chatStatus === "waiting" ? (
                     <div className="flex justify-start" role="status">
                       <div className="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-500">
                         Recherche et génération en cours…

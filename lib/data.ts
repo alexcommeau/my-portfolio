@@ -155,7 +155,7 @@ export const projectsData: Project[] = [
     category: "ia",
     tags: ["IA", "RAG"],
     title: "Assistant documentaire IA",
-    desc: "Un agent RAG auto-hébergé qui répond aux questions à partir d'une base de connaissances, avec des citations pour retrouver facilement les sources.",
+    desc: "Un agent RAG auto-hébergé qui répond aux questions à partir d'une base de connaissances dédiée à mon parcours et à mes projets.",
   },
   {
     id: "proj-2",
