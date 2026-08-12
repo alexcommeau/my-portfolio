@@ -13,12 +13,14 @@ import {
 import { ChatStreamError, readChatStream } from "@/lib/chat-stream";
 import { aboutCards, bio, chatQA } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import styles from "./about.module.css";
 
 type ChatMessage = {
   id: number;
   role: "user" | "assistant";
   content: string;
   answered?: boolean;
+  responseId?: string;
 };
 
 function GpuIcon({ className }: { className?: string }) {
@@ -137,6 +139,7 @@ export function About() {
           role: "assistant",
           content: completed.answer,
           answered: completed.answered,
+          responseId: completed.id,
         };
 
         return assistantMessageAdded
@@ -186,8 +189,8 @@ export function About() {
             </span>
           </h2>
           <p className="mb-7 text-[15.5px] text-zinc-400">
-            Découvrez mon parcours et mes compétences, ou échangez avec mon assistant
-            IA pour en savoir plus sur mon profil.
+            Quelques mots sur ce qui m&apos;anime, du développement à l&apos;IA, en
+            passant par mes passions créatives.
           </p>
           <div className="inline-flex gap-1 rounded-lg border border-zinc-800 bg-zinc-900 p-1">
             <button
@@ -216,8 +219,8 @@ export function About() {
         </div>
 
         {aboutTab === "profile" && (
-          <div className="grid min-h-[550px] grid-cols-1 gap-5 md:grid-cols-[1.1fr_1fr]">
-            <div className="rounded-[10px] border border-zinc-800 bg-zinc-900 p-8 pb-10">
+          <div className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-[1.1fr_1fr]">
+            <div className="h-full rounded-[10px] border border-zinc-800 bg-zinc-900 p-8 pb-10">
               <h3 className="mb-6 text-xl font-bold text-cyan-400">Qui suis-je ?</h3>
               {bio.map((paragraph, i) => (
                 <p
@@ -228,7 +231,7 @@ export function About() {
                 </p>
               ))}
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:self-start">
+            <div className="grid h-full grid-cols-1 gap-4 sm:grid-cols-2">
               {aboutCards.map((card) => (
                 <div
                   key={card.title}
@@ -334,12 +337,15 @@ export function About() {
                   ))}
                 </div>
               </div>
-              <div className="flex min-h-[438px] min-w-0 flex-col">
+              <div className="flex h-[438px] min-w-0 flex-col">
                 <div
                   role="log"
                   aria-live="polite"
                   aria-label="Conversation avec l’assistant"
-                  className="max-h-[520px] min-h-0 flex-1 space-y-4 overflow-y-auto px-6.5 py-6"
+                  className={cn(
+                    styles.chatScrollbar,
+                    "min-h-0 flex-1 space-y-4 overflow-y-auto px-6.5 py-6",
+                  )}
                 >
                   {messages.length === 0 ? (
                     <div className="m-auto flex min-h-[290px] max-w-[470px] flex-col items-center justify-center text-center">

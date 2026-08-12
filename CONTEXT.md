@@ -19,8 +19,10 @@ Ce dépôt est le portfolio personnel d’Alex Commeau, en français, avec :
 - un design sombre, responsive, construit avec Tailwind CSS et des primitives
   Base UI/shadcn.
 
-Il n’y a actuellement ni base de données, ni authentification, ni stockage persistant,
-ni CMS. Le contenu métier est principalement codé dans `lib/data.ts`.
+Ce dépôt frontend n’accède directement à aucune base de données. Le backend Nest.js
+historise toutefois les questions, réponses et chunks du chat dans Supabase. Il n’y
+a toujours ni authentification, ni CMS ; le contenu métier est principalement codé
+dans `lib/data.ts`.
 
 État fonctionnel important :
 
@@ -166,6 +168,7 @@ flowchart TD
     ChatAPI["POST /api/chat/stream"]
     NestChat["Nest.js POST /knowledge/ask/stream"]
     Rag["Retrieval + génération"]
+    History["Supabase / historique privé"]
     ContactUI["Contact / formulaire"]
     ContactAPI["POST /api/contact"]
     Resend["API Resend"]
@@ -186,6 +189,7 @@ flowchart TD
     ChatUI -->|"fetch + lecture SSE"| ChatAPI
     ChatAPI -->|"SSE + x-knowledge-chat-key"| NestChat
     NestChat --> Rag
+    NestChat --> History
     Home --> ContactUI
     ContactUI --> ContactAPI
     ContactAPI --> Resend
@@ -229,6 +233,7 @@ portant `"use client"` gèrent les interactions, les animations ou le chat.
 │   ├── chat-stream.ts             # parseur SSE consommé par le composant chat
 │   └── utils.ts                   # cn() = clsx + tailwind-merge
 ├── public/
+│   ├── documents/                 # CV PDF téléchargeable depuis le Hero
 │   └── images/                    # Portrait et fond décoratif de l’accueil
 ├── .claude/launch.json            # lancement local avec NVM et Node.js 22
 ├── Dockerfile                     # image Next.js standalone multi-stage
@@ -315,7 +320,7 @@ longueur de 3 à 500 caractères avec `lib/chat-schema.ts`.
 
 Elle applique une fenêtre glissante de 10 requêtes par 10 minutes et par IP, puis
 appelle `POST /knowledge/ask` sur le backend Nest.js avec le header privé
-`x-knowledge-chat-key`. Le navigateur ne reçoit que `{ answer, answered }` : clé,
+`x-knowledge-chat-key`. Le navigateur ne reçoit que `{ id, answer, answered }` : clé,
 modèle, scores, chunks, chemins et sources restent côté serveur.
 
 | Code  | Cas                                                               |
@@ -338,7 +343,8 @@ appelle `POST /knowledge/ask/stream` sur Nest.js. Elle vérifie le statut et le 
 de contenu avant de relayer le corps SSE sans le mettre en mémoire. Le flux contient :
 
 - des événements `token` avec chaque fragment de texte ;
-- un événement `done` avec la réponse complète nettoyée et `answered` ;
+- un événement `done` avec l’UUID persistant, la réponse complète nettoyée et
+  `answered` ;
 - éventuellement un événement `error` générique si la génération échoue après le
   début de la réponse.
 
@@ -392,7 +398,7 @@ argument lors du build Docker, ou vaut `unknown` en développement local.
 | ----------------------- | --------------------------------------------------------------- | ------------------------------------------------------------ |
 | `navbar.tsx`            | navigation desktop/mobile vers les sections                     | client ; `navItems`, `SectionLink`, état du menu mobile      |
 | `section-link.tsx`      | scroll Motion vers les sections sans fragment d’URL             | client ; Motion, Router Next.js, cible temporaire en session |
-| `hero/hero.tsx`         | introduction, rôle animé, portrait avec bordure interactive et CTA | client ; Motion, `roles`, `hero.webp`                      |
+| `hero/hero.tsx`         | introduction, rôle animé, portrait avec bordure interactive et CTA | client ; Motion, `roles`, `hero.webp`, téléchargement du CV |
 | `about.tsx`             | onglets Profil/Chat et interface du chat                        | client ; historique visuel, lecture SSE, requêtes indépendantes |
 | `ui-context.tsx`        | état partagé `aboutTab`                                         | client                                                       |
 | `skills.tsx`            | grilles de compétences                                          | `skillGroups`                                                |
@@ -461,7 +467,8 @@ maintenues et indexées dans `my-portfolio-backend/knowledges/`. Modifier
 `POST /api/chat/stream` contient seulement la nouvelle question. Une seule requête
 peut être en cours ; suggestions et saisie sont alors désactivées. Dès le premier
 événement `token`, le message assistant est créé puis enrichi progressivement.
-L’événement `done` remplace son contenu par la réponse complète nettoyée. Une erreur
+L’événement `done` remplace son contenu par la réponse complète nettoyée et conserve
+son UUID backend dans `responseId`, sans l’afficher. Une erreur
 retire la réponse partielle afin de ne pas présenter un texte tronqué comme fiable.
 Le composant annule la requête s’il est démonté, affiche du texte simple sans sources
 ni Markdown et fait défiler la zone vers le dernier message. L’historique disparaît
@@ -597,7 +604,7 @@ secrets. Cette liste est un aide-mémoire local, pas un mécanisme de sécurité
 
 ## 14. Inachèvements et risques connus
 
-- CV, « Voir l’architecture » et certains liens projet : `href="#"`.
+- « Voir l’architecture » et certains liens projet : `href="#"`.
 - Formulaire de contact : la limitation par IP vit en mémoire, donc elle repart de zéro
   à chaque redémarrage du conteneur et ne tiendrait pas en multi-instance ni en runtime
   edge. `x-forwarded-for` reste falsifiable tant qu’aucun reverse proxy de confiance ne
