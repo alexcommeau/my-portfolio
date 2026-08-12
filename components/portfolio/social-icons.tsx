@@ -1,3 +1,5 @@
+import type { ComponentType } from "react";
+
 type IconProps = {
   className?: string;
 };
@@ -17,3 +19,36 @@ export function LinkedinIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function ArtstationIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
+      <path d="M0 23.63l2.703 4.672c.552 1.094 1.667 1.781 2.885 1.781h17.943l-3.724-6.453H0ZM32 23.661c0-.641-.193-1.245-.516-1.75L20.968 3.635c-.557-1.057-1.656-1.719-2.854-1.719h-5.557l16.24 28.135 2.563-4.432c.5-.849.641-1.224.641-1.958ZM17.161 19.047 9.906 6.479l-7.26 12.568h14.515Z" />
+    </svg>
+  );
+}
+
+export type SocialLink = {
+  label: string;
+  href: string;
+  Icon: ComponentType<IconProps>;
+};
+
+/** Source unique des liens sociaux, réutilisée par le Hero et le Footer. */
+export const socialLinks: SocialLink[] = [
+  {
+    label: "GitHub",
+    href: "https://github.com/alexcommeau",
+    Icon: GithubIcon,
+  },
+  {
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/in/alex-commeau-5a1799127/",
+    Icon: LinkedinIcon,
+  },
+  {
+    label: "ArtStation",
+    href: "https://www.artstation.com/commea_sculpt",
+    Icon: ArtstationIcon,
+  },
+];

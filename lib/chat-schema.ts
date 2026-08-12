@@ -21,6 +21,7 @@ export const chatRequestSchema = z.strictObject({
 
 /** Réponse minimale attendue du backend Nest.js et renvoyée au navigateur. */
 export const chatSuccessResponseSchema = z.strictObject({
+  id: z.uuid(),
   answer: z.string().min(1),
   answered: z.boolean(),
 });
@@ -35,6 +36,7 @@ export const chatStreamEventSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("token"), token: z.string().min(1) }),
   z.strictObject({
     type: z.literal("done"),
+    id: z.uuid(),
     answer: z.string().min(1),
     answered: z.boolean(),
   }),

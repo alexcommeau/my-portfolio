@@ -20,9 +20,9 @@ export const roles = [
 ];
 
 export const bio: string[] = [
-  "Je suis Alex, développeur fullstack et passionné par les technologies qui permettent de créer des choses utiles. J'aime comprendre comment les systèmes fonctionnent, expérimenter de nouvelles idées et transformer mes découvertes en projets concrets.",
-  "Aujourd'hui, je m'intéresse particulièrement à l'intelligence artificielle, aux agents et à l'auto-hébergement. Je prends plaisir à apprendre par la pratique, que ce soit en développant une application, en testant un nouveau modèle ou en faisant évoluer mon homelab.",
-  "En dehors du développement, je m'intéresse à des activités qui demandent précision et créativité, comme la gravure et la bijouterie. Le sport occupe aussi une place importante dans mon quotidien : il m'aide à garder un bon équilibre et à rester discipliné.",
+  "Créatif et curieux, j'aime comprendre comment les choses fonctionnent, donner vie à mes idées et construire des applications complètes en prenant soin de l'expérience utilisateur.",
+  "En ce moment, j'explore avec enthousiasme l'intelligence artificielle, les agents et l'auto-hébergement. J'apprends surtout en expérimentant : un nouveau modèle, une application à imaginer ou une amélioration à apporter à mon homelab.",
+  "La création occupe aussi une grande place dans mon quotidien. J'adore imaginer des objets avec Blender et ZBrush pour les imprimer en 3D, créer des scènes Three.js et travailler de mes mains à travers la gravure et la bijouterie.",
 ];
 
 export type AboutCard = {
@@ -35,22 +35,22 @@ export const aboutCards: AboutCard[] = [
   {
     glyph: "{}",
     title: "Développement fullstack",
-    desc: "Concevoir des applications complètes, de l'architecture technique jusqu'à l'interface utilisateur.",
+    desc: "J'aime construire des applications complètes, de leur architecture jusqu'aux détails de l'interface.",
   },
   {
     glyph: "◆",
     title: "IA & auto-hébergement",
-    desc: "Explorer les modèles, les agents et les outils que je peux faire tourner et comprendre par moi-même.",
+    desc: "J'explore les modèles, les agents et les outils que je peux faire tourner et comprendre par moi-même.",
   },
   {
     glyph: "✦",
     title: "Gravure & bijouterie",
-    desc: "Des activités manuelles qui nourrissent ma précision, ma créativité et mon goût du travail bien fait.",
+    desc: "J'aime travailler de mes mains et créer des pièces qui demandent précision, patience et créativité.",
   },
   {
-    glyph: "↗",
-    title: "Sport & équilibre",
-    desc: "Le sport m'aide à garder un rythme régulier, de la discipline et un équilibre au quotidien.",
+    glyph: "◈",
+    title: "Création 3D",
+    desc: "Blender et ZBrush me servent au quotidien pour imprimer mes idées et créer des scènes Three.js.",
   },
 ];
 
@@ -62,7 +62,7 @@ export type SkillGroup = {
 export const skillGroups: SkillGroup[] = [
   {
     title: "Frontend",
-    tags: ["React.js", "Next.js", "TypeScript", "Tailwind CSS"],
+    tags: ["React.js", "Next.js", "Tailwind CSS", "TypeScript"],
   },
   {
     title: "Backend",
@@ -80,29 +80,35 @@ export const skillGroups: SkillGroup[] = [
     tags: [
       "LLM API",
       "RAG",
-      "Prompt Engineering",
       "Embeddings",
+      "Prompt Engineering",
       "Vector Search",
     ],
   },
   {
     title: "Data & Cloud",
     tags: [
-      "Docker",
-      "Linux",
       "Cloudflare Tunnel",
       "SSH",
-      "GitHub Actions",
       "AWS",
+      "Docker",
+      "Linux",
+      "GitHub Actions",
     ],
   },
   {
     title: "Outils",
-    tags: ["Git", "Docker Compose", "Claude Code", "Codex"],
+    tags: ["Docker Compose", "Claude Code", "Git", "Codex"],
   },
   {
     title: "Bonnes pratiques",
-    tags: ["Tests unitaires", "Code review", "System Design", "Agile", "Clean code"],
+    tags: [
+      "Tests unitaires",
+      "System Design",
+      "Code review",
+      "Clean code",
+      "Agile",
+    ],
   },
 ];
 
@@ -248,100 +254,30 @@ export type BlogPost = {
 
 // Ordre du plus récent au plus ancien : `app/blog/page.tsx` met blogPosts[0] à la une.
 export const blogPosts: BlogPost[] = [
-  {
-    slug: "rag-auto-heberge",
-    tag: "IA",
-    publishedAt: "2026-06-03",
-    modifiedAt: "2026-06-03",
-    readTime: "6 min",
-    title: "Construire un agent RAG auto-hébergé de A à Z",
-    excerpt:
-      "Retour d'expérience sur la conception d'un assistant documentaire qui tourne entièrement sur mon homelab, du choix du modèle au pipeline d'ingestion.",
-    tags: ["RAG", "Auto-hébergement", "LLM", "Homelab"],
-    searchIntent: "Comment construire un agent RAG auto-hébergé ?",
-    image: {
-      src: "/blog/rag-auto-heberge/cover",
-      alt: "Couverture graphique de l'article sur la construction d'un agent RAG auto-hébergé",
-    },
-    sections: [
-      { id: "prerequis", title: "Objectif et prérequis" },
-      { id: "pourquoi-auto-heberger", title: "Pourquoi auto-héberger" },
-      { id: "architecture", title: "L'architecture retenue" },
-      { id: "evaluation", title: "Évaluer avant d'optimiser" },
-      { id: "retour-experience", title: "Ce que je referais différemment" },
-      { id: "conclusion", title: "Conclusion" },
-    ],
-  },
-  {
-    slug: "homelab-docker-compose",
-    tag: "Homelab",
-    publishedAt: "2026-05-18",
-    modifiedAt: "2026-05-18",
-    readTime: "5 min",
-    title: "Structurer un homelab avec Docker Compose",
-    excerpt:
-      "Comment j'organise une dizaine de services auto-hébergés avec un seul fichier Compose lisible, des réseaux isolés et des sauvegardes qui tiennent la route.",
-    tags: ["Docker", "Homelab", "Auto-hébergement", "DevOps"],
-    searchIntent: "Comment structurer un homelab avec Docker Compose ?",
-    image: {
-      src: "/blog/homelab-docker-compose/cover",
-      alt: "Couverture graphique de l'article sur l'organisation d'un homelab avec Docker Compose",
-    },
-    sections: [
-      { id: "objectif", title: "Objectif et organisation" },
-      { id: "reseaux-isoles", title: "Un seul fichier, des réseaux isolés" },
-      { id: "secrets-configuration", title: "Séparer secrets et configuration" },
-      { id: "sauvegardes", title: "Des sauvegardes qui tiennent la route" },
-      { id: "conclusion", title: "Conclusion" },
-    ],
-  },
-  {
-    slug: "next-app-router-workflow",
-    tag: "Web",
-    publishedAt: "2026-05-02",
-    modifiedAt: "2026-05-02",
-    readTime: "7 min",
-    title: "Next.js App Router : ce qui a changé dans mon workflow",
-    excerpt:
-      "Server Components, layouts imbriqués et streaming ont rebattu les cartes. Les habitudes que j'ai gardées, celles que j'ai abandonnées, et pourquoi.",
-    tags: ["Next.js", "React", "Server Components", "Web"],
-    searchIntent: "Comment adopter un workflow efficace avec Next.js App Router ?",
-    image: {
-      src: "/blog/next-app-router-workflow/cover",
-      alt: "Couverture graphique de l'article sur le workflow Next.js App Router",
-    },
-    sections: [
-      { id: "objectif", title: "Ce que l'App Router change" },
-      { id: "frontiere-server-client", title: "Choisir la frontière serveur-client" },
-      { id: "habitudes-gardees", title: "Les habitudes que j'ai gardées" },
-      { id: "habitudes-abandonnees", title: "Ce que j'ai abandonné" },
-      { id: "conclusion", title: "Conclusion" },
-    ],
-  },
-  {
-    slug: "prompt-engineering-patterns",
-    tag: "IA",
-    publishedAt: "2026-04-14",
-    modifiedAt: "2026-04-14",
-    readTime: "5 min",
-    title: "Prompt engineering : les patterns qui tiennent en prod",
-    excerpt:
-      "Au-delà des astuces virales, quelques schémas de prompts robustes qui survivent aux changements de modèle et aux entrées utilisateur imprévisibles.",
-    tags: ["Prompt Engineering", "LLM", "IA", "Fiabilité"],
-    searchIntent: "Quels patterns rendent les prompts robustes en production ?",
-    image: {
-      src: "/blog/prompt-engineering-patterns/cover",
-      alt: "Couverture graphique de l'article sur les patterns de prompt engineering fiables en production",
-    },
-    sections: [
-      { id: "objectif", title: "Ce qu'un prompt de production doit garantir" },
-      { id: "instruction-donnee", title: "Séparer instruction et donnée" },
-      { id: "sortie-contrainte", title: "Contraindre la sortie" },
-      { id: "evaluation", title: "Versionner et évaluer" },
-      { id: "prevoir-echec", title: "Prévoir l'échec" },
-      { id: "conclusion", title: "Conclusion" },
-    ],
-  },
+  // {
+  //   slug: "rag-auto-heberge",
+  //   tag: "IA",
+  //   publishedAt: "2026-06-03",
+  //   modifiedAt: "2026-06-03",
+  //   readTime: "6 min",
+  //   title: "Construire un agent RAG auto-hébergé de A à Z",
+  //   excerpt:
+  //     "Retour d'expérience sur la conception d'un assistant documentaire qui tourne entièrement sur mon homelab, du choix du modèle au pipeline d'ingestion.",
+  //   tags: ["RAG", "Auto-hébergement", "LLM", "Homelab"],
+  //   searchIntent: "Comment construire un agent RAG auto-hébergé ?",
+  //   image: {
+  //     src: "/blog/rag-auto-heberge/cover",
+  //     alt: "Couverture graphique de l'article sur la construction d'un agent RAG auto-hébergé",
+  //   },
+  //   sections: [
+  //     { id: "prerequis", title: "Objectif et prérequis" },
+  //     { id: "pourquoi-auto-heberger", title: "Pourquoi auto-héberger" },
+  //     { id: "architecture", title: "L'architecture retenue" },
+  //     { id: "evaluation", title: "Évaluer avant d'optimiser" },
+  //     { id: "retour-experience", title: "Ce que je referais différemment" },
+  //     { id: "conclusion", title: "Conclusion" },
+  //   ],
+  // },
 ];
 
 export type ChatQA = {

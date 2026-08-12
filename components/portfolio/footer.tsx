@@ -1,19 +1,6 @@
 import Link from "next/link";
 import { navItems } from "@/lib/data";
-import { GithubIcon, LinkedinIcon } from "@/components/portfolio/social-icons";
-
-const socialLinks = [
-  {
-    label: "GitHub",
-    href: "https://github.com/alexcommeau",
-    Icon: GithubIcon,
-  },
-  {
-    label: "LinkedIn",
-    href: "https://www.linkedin.com/in/alex-commeau-5a1799127/",
-    Icon: LinkedinIcon,
-  },
-];
+import { socialLinks } from "@/components/portfolio/social-icons";
 
 export function Footer() {
   return (
@@ -42,6 +29,7 @@ export function Footer() {
               key={label}
               href={href}
               target="_blank"
+              rel="noopener noreferrer"
               aria-label={label}
               className="flex size-8.5 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-500 hover:border-cyan-400 hover:text-cyan-400"
             >

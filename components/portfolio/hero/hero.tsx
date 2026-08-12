@@ -5,10 +5,7 @@ import Image from "next/image";
 import { SectionReveal } from "@/components/ui/section-reveal";
 import { SectionLink } from "@/components/portfolio/section-link";
 import { roles } from "@/lib/data";
-import {
-  GithubIcon,
-  LinkedinIcon,
-} from "@/components/portfolio/social-icons";
+import { socialLinks } from "@/components/portfolio/social-icons";
 import styles from "./hero.module.css";
 
 function useTypedRole() {
@@ -158,28 +155,24 @@ export function Hero() {
             <span className="animate-[blink_1s_step-start_infinite]">|</span>
           </div>
           <p className="mb-8 max-w-[520px] text-[16.5px] leading-relaxed text-zinc-400">
-            Curieux et créatif, je crée des applications de A à Z,
-            avec autant d&apos;attention pour leur architecture que pour leur
-            expérience utilisateur. L&apos;IA fait aujourd&apos;hui partie des domaines
-            que j&apos;explore avec enthousiasme pour enrichir mes applications.
+            Développeur full-stack depuis maintenant plus de 5 ans, j’adore
+            créer des applications et voir des projets prendre forme. Curieux et
+            créatif, je m’intéresse beaucoup aux technologies autour de l’IA. Et
+            quand je ne code pas, j’aime aussi créer avec mes mains.
           </p>
           <div className="mb-7 flex gap-2.5">
-            <a
-              href="https://github.com/alexcommeau"
-              target="_blank"
-              aria-label="GitHub"
-              className="flex size-9.5 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition-colors hover:border-cyan-400 hover:text-cyan-400"
-            >
-              <GithubIcon className="size-4.25" />
-            </a>
-            <a
-              href="https://www.linkedin.com/in/alex-commeau-5a1799127/"
-              target="_blank"
-              aria-label="LinkedIn"
-              className="flex size-9.5 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition-colors hover:border-cyan-400 hover:text-cyan-400"
-            >
-              <LinkedinIcon className="size-4.25" />
-            </a>
+            {socialLinks.map(({ label, href, Icon }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+                className="flex size-9.5 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 transition-colors hover:border-cyan-400 hover:text-cyan-400"
+              >
+                <Icon className="size-4.25" />
+              </a>
+            ))}
           </div>
           <div className="flex gap-3">
             <SectionLink
@@ -199,8 +192,9 @@ export function Hero() {
               </svg>
             </SectionLink>
             <a
-              href="#"
-              onClick={(event) => event.preventDefault()}
+              href="/documents/CV_Alex_Commeau_2026.pdf"
+              download="CV_Alex_Commeau_2026.pdf"
+              aria-label="Télécharger le CV d'Alex Commeau"
               className="inline-flex items-center gap-2 rounded-md border border-zinc-800 px-5.5 py-2.75 text-[14.5px] font-semibold text-zinc-200 transition-colors hover:border-zinc-600 hover:bg-zinc-900"
             >
               CV
@@ -217,9 +211,9 @@ export function Hero() {
             </a>
           </div>
         </div>
-  
+
         <HeroPortrait />
-  
+
         <SectionLink
           sectionId="about"
           aria-label="Défiler vers le bas"
