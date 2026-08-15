@@ -13,11 +13,7 @@ export const navItems: NavItem[] = [
   { label: "Contact", href: "#contact" },
 ];
 
-export const roles = [
-  "Développeur FullStack",
-  "Techno-Artisan",
-  "IA/ML Explorer",
-];
+export const roles = ["Développeur FullStack", "IA Explorer", "Techno-Artisan"];
 
 export const bio: string[] = [
   "Créatif et curieux, j'aime comprendre comment les choses fonctionnent, donner vie à mes idées et construire des applications complètes en prenant soin de l'expérience utilisateur.",
@@ -68,10 +64,10 @@ export const skillGroups: SkillGroup[] = [
     title: "Backend",
     tags: [
       "Node.js",
-      "Express",
+      "Express.js",
       "PostgreSQL",
       "REST / GraphQL",
-      "Nest",
+      "Nest.js",
       "Java",
     ],
   },
@@ -86,19 +82,20 @@ export const skillGroups: SkillGroup[] = [
     ],
   },
   {
-    title: "Data & Cloud",
+    title: "DevOps & Infra",
     tags: [
       "Cloudflare Tunnel",
       "SSH",
       "AWS",
       "Docker",
+      "Docker Compose",
       "Linux",
       "GitHub Actions",
     ],
   },
   {
     title: "Outils",
-    tags: ["Docker Compose", "Claude Code", "Git", "Codex"],
+    tags: ["Claude Code", "Git", "Codex"],
   },
   {
     title: "Bonnes pratiques",
@@ -176,7 +173,7 @@ export const projectsData: Project[] = [
     category: "web",
     tags: ["Web"],
     title: "ERP devis & factures pour bijoutiers",
-    desc: "Un outil léger pour gérer les devis et les factures, pensé pour les créateurs indépendants qui veulent gagner du temps.",
+    desc: "Un outil privé que j’utilise pour gérer mes devis et factures. Il reste en cours de développement pour les créateurs indépendants.",
     status: "in-progress",
   },
 ];

@@ -13,7 +13,8 @@ export function Skills() {
             </span>
           </h2>
           <p className="text-[15.5px] text-zinc-400">
-            Les technologies que j&apos;utilise au quotidien
+            Expertise professionnelle, pratique confirmée et explorations
+            techniques en cours.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">

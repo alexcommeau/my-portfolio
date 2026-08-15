@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CircleQuestionMark, TriangleAlert } from "lucide-react";
+import {
+  Check,
+  CircleQuestionMark,
+  Copy,
+  MessageSquareWarning,
+  TriangleAlert,
+} from "lucide-react";
+import { useReducedMotion } from "motion/react";
+import { scrollToSection } from "@/components/portfolio/section-link";
 import { useAboutTabContext } from "@/components/portfolio/ui-context";
 import { Input } from "@/components/ui/input";
 import { SectionReveal } from "@/components/ui/section-reveal";
@@ -34,9 +42,10 @@ function GpuIcon({ className }: { className?: string }) {
 }
 
 export function About() {
-  const { aboutTab, setAboutTab } = useAboutTabContext();
+  const { aboutTab, setAboutTab, reportChatAnswer } = useAboutTabContext();
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [copiedResponseId, setCopiedResponseId] = useState<string | null>(null);
   const [chatStatus, setChatStatus] = useState<
     "idle" | "waiting" | "streaming"
   >("idle");
@@ -44,6 +53,8 @@ export function About() {
   const messageSequence = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const activeRequestRef = useRef<AbortController | null>(null);
+  const copyFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shouldReduceMotion = useReducedMotion();
   const chatTyping = chatStatus !== "idle";
 
   /** Maintient le dernier message visible sans gérer la conversation côté API. */
@@ -57,8 +68,36 @@ export function About() {
 
   /** Annule aussi l'appel Nest.js et le LLM si le composant disparaît. */
   useEffect(() => {
-    return () => activeRequestRef.current?.abort();
+    return () => {
+      activeRequestRef.current?.abort();
+      if (copyFeedbackTimerRef.current) {
+        clearTimeout(copyFeedbackTimerRef.current);
+      }
+    };
   }, []);
+
+  const copyAnswer = async (message: ChatMessage) => {
+    if (!message.responseId) return;
+
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopiedResponseId(message.responseId);
+      if (copyFeedbackTimerRef.current) {
+        clearTimeout(copyFeedbackTimerRef.current);
+      }
+      copyFeedbackTimerRef.current = setTimeout(
+        () => setCopiedResponseId(null),
+        2000,
+      );
+    } catch {
+      setChatError("La réponse n’a pas pu être copiée.");
+    }
+  };
+
+  const reportAnswer = (questionId: string) => {
+    reportChatAnswer(questionId);
+    scrollToSection("contact", Boolean(shouldReduceMotion));
+  };
 
   /** Envoie une question indépendante et conserve uniquement l’historique visuel. */
   const askQuestion = async (rawQuestion: string) => {
@@ -370,17 +409,61 @@ export function About() {
                           message.role === "user" ? "justify-end" : "justify-start",
                         )}
                       >
-                        <div
-                          className={cn(
-                            "max-w-[88%] whitespace-pre-wrap rounded-xl px-4 py-3 text-sm leading-relaxed",
-                            message.role === "user"
-                              ? "bg-cyan-400 text-[#052027]"
-                              : message.answered === false
-                                ? "border border-amber-400/20 bg-amber-400/5 text-zinc-300"
-                                : "border border-zinc-800 bg-zinc-950 text-zinc-300",
-                          )}
-                        >
-                          {message.content}
+                        <div className="flex max-w-[88%] min-w-0 flex-col items-start gap-1.5">
+                          <div
+                            className={cn(
+                              "w-full whitespace-pre-wrap rounded-xl px-4 py-3 text-sm leading-relaxed",
+                              message.role === "user"
+                                ? "bg-cyan-400 text-[#052027]"
+                                : message.answered === false
+                                  ? "border border-amber-400/20 bg-amber-400/5 text-zinc-300"
+                                  : "border border-zinc-800 bg-zinc-950 text-zinc-300",
+                            )}
+                          >
+                            {message.content}
+                          </div>
+
+                          {message.role === "assistant" && message.responseId ? (
+                            <div
+                              className="flex items-center gap-1 pl-1 text-zinc-500"
+                              aria-label="Actions sur la réponse"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => void copyAnswer(message)}
+                                className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-[11.5px] transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+                                aria-label="Copier la réponse"
+                              >
+                                {copiedResponseId === message.responseId ? (
+                                  <Check
+                                    className="size-3.5 text-teal-400"
+                                    aria-hidden="true"
+                                  />
+                                ) : (
+                                  <Copy className="size-3.5" aria-hidden="true" />
+                                )}
+                                {copiedResponseId === message.responseId
+                                  ? "Copié"
+                                  : "Copier"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (message.responseId) {
+                                    reportAnswer(message.responseId);
+                                  }
+                                }}
+                                className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-[11.5px] transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+                                aria-label="Signaler une erreur dans cette réponse"
+                              >
+                                <MessageSquareWarning
+                                  className="size-3.5"
+                                  aria-hidden="true"
+                                />
+                                Signaler une erreur
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     ))
