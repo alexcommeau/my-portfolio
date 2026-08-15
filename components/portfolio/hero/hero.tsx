@@ -155,10 +155,11 @@ export function Hero() {
             <span className="animate-[blink_1s_step-start_infinite]">|</span>
           </div>
           <p className="mb-8 max-w-[520px] text-[16.5px] leading-relaxed text-zinc-400">
-            Développeur full-stack depuis maintenant plus de 5 ans, j’adore
-            créer des applications et voir des projets prendre forme. Curieux et
-            créatif, je m’intéresse beaucoup aux technologies autour de l’IA. Et
-            quand je ne code pas, j’aime aussi créer avec mes mains.
+            Je suis développeur full-stack depuis plus de cinq ans, mais surtout
+            quelqu’un qui aime construire. Une application, une expérience
+            interactive ou un objet fait main : j’aime partir de rien et donner
+            forme à une idée. En ce moment, j’explore particulièrement tout ce
+            qui touche à l’IA.
           </p>
           <div className="mb-7 flex gap-2.5">
             {socialLinks.map(({ label, href, Icon }) => (

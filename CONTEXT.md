@@ -270,7 +270,8 @@ ne sont pas importés.
 9. `Footer`
 
 Le tout est enveloppé dans `AboutTabProvider`, qui partage l’onglet actif de la section
-À propos entre `About` et `Projects`.
+À propos entre `About` et `Projects`, ainsi que les signalements de réponses du chat
+avec le formulaire `Contact`.
 
 Ancres actives : `hero`, `about`, `projects`, `skills`, `experience`, `education`,
 `contact`. L’entrée Blog de `navItems` pointe vers la route autonome `/blog` ; les
@@ -399,8 +400,8 @@ argument lors du build Docker, ou vaut `unknown` en développement local.
 | `navbar.tsx`            | navigation desktop/mobile vers les sections                     | client ; `navItems`, `SectionLink`, état du menu mobile      |
 | `section-link.tsx`      | scroll Motion vers les sections sans fragment d’URL             | client ; Motion, Router Next.js, cible temporaire en session |
 | `hero/hero.tsx`         | introduction, rôle animé, portrait avec bordure interactive et CTA | client ; Motion, `roles`, `hero.webp`, téléchargement du CV |
-| `about.tsx`             | onglets Profil/Chat et interface du chat                        | client ; historique visuel, lecture SSE, requêtes indépendantes |
-| `ui-context.tsx`        | état partagé `aboutTab`                                         | client                                                       |
+| `about.tsx`             | onglets Profil/Chat et interface du chat                        | client ; historique visuel, lecture SSE, copie et signalement des réponses |
+| `ui-context.tsx`        | état partagé des onglets et signalements                        | client ; relie le chat, les projets et le contact            |
 | `skills.tsx`            | grilles de compétences                                          | `skillGroups`                                                |
 | `experience.tsx`        | chronologie professionnelle avec fade-up progressif des entrées | `experiences`, `SectionReveal`                               |
 | `projects.tsx`          | filtres IA/Web/DevOps, aperçus de projet et cartes avec état « en cours » | client ; contexte partagé                                    |
@@ -473,6 +474,12 @@ retire la réponse partielle afin de ne pas présenter un texte tronqué comme f
 Le composant annule la requête s’il est démonté, affiche du texte simple sans sources
 ni Markdown et fait défiler la zone vers le dernier message. L’historique disparaît
 au rechargement de la page.
+
+Une réponse terminée peut être copiée dans le presse-papiers ou signalée. Le
+signalement transmet son UUID persistant au contexte de page, préremplit le sujet et
+le message du formulaire de contact, puis déclenche le défilement Motion habituel vers
+la section `contact`. Cet UUID reste visible dans le sujet envoyé afin de retrouver
+la question et sa réponse dans l’historique privé du backend.
 
 ### Navigation et état partagé
 

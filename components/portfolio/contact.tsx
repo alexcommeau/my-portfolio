@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { z } from "zod";
+import { useAboutTabContext } from "@/components/portfolio/ui-context";
 import { SectionReveal } from "@/components/ui/section-reveal";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,10 +30,26 @@ const errorClass = "mt-1.5 text-[12.5px] text-red-400";
 
 export function Contact() {
   const uid = useId();
+  const { chatReport } = useAboutTabContext();
   const [form, setForm] = useState(initialForm);
   const [status, setStatus] = useState<Status>("idle");
   const [fieldErrors, setFieldErrors] = useState<ContactFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [appliedReportSequence, setAppliedReportSequence] = useState(0);
+
+  if (chatReport && chatReport.sequence !== appliedReportSequence) {
+    setAppliedReportSequence(chatReport.sequence);
+    setForm((current) => ({
+      ...current,
+      subject: `Erreur sur la question ${chatReport.questionId}`,
+      message:
+        `Bonjour,\n\nJe souhaite signaler une erreur dans la réponse associée à la question ${chatReport.questionId}.\n\n` +
+        "Détail de l’erreur :\n",
+    }));
+    setStatus("idle");
+    setFieldErrors({});
+    setFormError(null);
+  }
 
   const setField =
     (field: keyof typeof initialForm) =>
