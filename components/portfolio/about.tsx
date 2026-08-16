@@ -51,7 +51,7 @@ export function About() {
   >("idle");
   const [chatError, setChatError] = useState<string | null>(null);
   const messageSequence = useRef(0);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatLogRef = useRef<HTMLDivElement>(null);
   const activeRequestRef = useRef<AbortController | null>(null);
   const copyFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shouldReduceMotion = useReducedMotion();
@@ -59,11 +59,12 @@ export function About() {
 
   /** Maintient le dernier message visible sans gérer la conversation côté API. */
   useEffect(() => {
-    if (aboutTab !== "chat") return;
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest",
-    });
+    if (aboutTab !== "chat" || messages.length === 0) return;
+
+    const chatLog = chatLogRef.current;
+    if (!chatLog) return;
+
+    chatLog.scrollTop = chatLog.scrollHeight;
   }, [aboutTab, messages, chatStatus]);
 
   /** Annule aussi l'appel Nest.js et le LLM si le composant disparaît. */
@@ -378,6 +379,7 @@ export function About() {
               </div>
               <div className="flex h-[438px] min-w-0 flex-col">
                 <div
+                  ref={chatLogRef}
                   role="log"
                   aria-live="polite"
                   aria-label="Conversation avec l’assistant"
@@ -486,7 +488,6 @@ export function About() {
                     </p>
                   ) : null}
 
-                  <div ref={messagesEndRef} />
                 </div>
 
                 <form
